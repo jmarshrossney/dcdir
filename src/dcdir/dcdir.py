@@ -99,7 +99,7 @@ class DataclassDirectory:
         for f in dataclasses.fields(self):
             config = getattr(self, f.name)
             full_path = path / config.path
-            handler = config.handle
+            handler = config.handler
 
             data[f.name] = handler.read(full_path)
 
