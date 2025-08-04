@@ -1,10 +1,10 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from collections.abc import Mapping
 from dataclasses import dataclass, fields
 import logging
 from os import PathLike
 from pathlib import Path
-from typing import Any, ClassVar, Protocol, runtime_checkable, Self
+from typing import Any, Protocol, runtime_checkable
 
 logger = logging.getLogger(__name__)
 
@@ -56,14 +56,14 @@ class DataclassDirectory:
                 logger.info(
                     f"A handler but no path was provided for field '{f.name}'. The handler may be able to infer the path."
                 )
-                setattr(self, f.name, FileConfig(f.name, handler))
+                setattr(self, f.name, FileConfig(path=f.name, handler=attr))
 
             elif isinstance(attr, Mapping):
                 # Mapping provided, attempt to create FileConfig with it
                 try:
                     config = FileConfig(**attr)
                 except TypeError as exc:
-                    raise TypeError(f"Field {f.name} must be an instance of FileConfig")
+                    raise TypeError(f"Field {f.name} must be an instance of FileConfig") from exc
                 else:
                     setattr(self, f.name, config)
 
