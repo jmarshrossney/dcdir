@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from collections.abc import Mapping
-from dataclasses import dataclass, fields
+import dataclasses
 import logging
 from os import PathLike
 from pathlib import Path
@@ -35,7 +35,7 @@ def register_handler(extension: str, handler: type[Handler]) -> None:
     _handler_registry[extension] = handler
 
 
-@dataclass
+@dataclasses.dataclass
 class FileConfig:
     path: Path
     handler: Handler
@@ -55,12 +55,12 @@ class FileConfig:
         # TODO: check handler is a class adhering to Handler protocol
 
 
-@dataclass
+@dataclasses.dataclass
 class DataclassDirectory:
     """Base dataclass to represent a directory."""
 
     def __post_init__(self) -> None:
-        for f in fields(self):
+        for f in dataclasses.fields(self):
             attr = getattr(self, f.name)
 
             if isinstance(attr, FileConfig):
@@ -96,7 +96,7 @@ class DataclassDirectory:
         path = Path(path).resolve()
         data = {}
 
-        for f in fields(self):
+        for f in dataclasses.fields(self):
             config = getattr(self, f.name)
             full_path = path / config.path
             handler = config.handle
@@ -110,7 +110,7 @@ class DataclassDirectory:
     ) -> None:
         path = Path(path).resolve()
 
-        for f in fields(self):
+        for f in dataclasses.fields(self):
             config = getattr(self, f.name)
             full_path = path / config.path
             handler = config.handler
@@ -125,13 +125,11 @@ class DataclassDirectory:
         tee = "├──"
         blank = "   "
         lines = []
-        fields_ = fields(self)
-        for i, f in enumerate(fields_):
+        fields = dataclasses.fields(self)
+        for i, f in enumerate(fields):
             config = getattr(self, f.name)
 
-            lines += [
-                level * pipe + (elbow if i == len(fields_) else tee) + config.path
-            ]
+            lines += [level * pipe + (elbow if i == len(fields) else tee) + config.path]
 
             if isinstance(config.handler, DataclassDirectory):
                 lines += config.handler.tree(level=level + 1, print_=False)
@@ -140,3 +138,14 @@ class DataclassDirectory:
             print("\n".join(lines))
 
         return lines
+
+
+def make_dataclass_directory(
+    cls_name: str,
+    field_names: list[str],
+) -> DataclassDirectory:
+    return dataclasses.make_dataclass(
+        cls_name=cls_name,
+        fields=[(name, FileConfig) for name in field_names],
+        bases=(DataclassDirectory,),
+    )
