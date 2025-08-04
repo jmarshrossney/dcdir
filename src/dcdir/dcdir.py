@@ -18,6 +18,23 @@ class Handler(Protocol):
     def write(self, path: str | PathLike, data: Any, *, overwrite_ok: bool) -> None: ...
 
 
+_handler_registry: dict[str, type[Handler]] = {}
+
+
+def register_handler(extension: str, handler: type[Handler]) -> None:
+    # assert isinstance(handler, Handler)
+
+    assert isinstance(extension, str)
+    assert extension.startswith(".")
+
+    if extension in _handler_registry:
+        logger.warning(
+            f"Extension '{extension}' already exists in handler registry and will be overwritten!"
+        )
+
+    _handler_registry[extension] = handler
+
+
 @dataclass
 class FileConfig:
     path: Path
@@ -49,21 +66,26 @@ class DataclassDirectory:
             if isinstance(attr, FileConfig):
                 continue
 
-            # NOTE: is it even worth supporting this?
-            elif isinstance(attr, Handler):
-                # Handler but no path provided. In this case the handler
-                # may attempt to infer the correct path based on the field name
-                logger.info(
-                    f"A handler but no path was provided for field '{f.name}'. The handler may be able to infer the path."
-                )
-                setattr(self, f.name, FileConfig(path=f.name, handler=attr))
+            elif isinstance(attr, (str, PathLike)):
+                # Only path provided
+                extension = Path(attr).suffix
+                try:
+                    handler = _handler_registry[extension]
+                except KeyError as exc:
+                    raise Exception(
+                        f"No handler found for extension '{extension}' in the handler registry."
+                    ) from exc
+                else:
+                    setattr(self, f.name, FileConfig(path=attr, handler=handler))
 
             elif isinstance(attr, Mapping):
                 # Mapping provided, attempt to create FileConfig with it
                 try:
                     config = FileConfig(**attr)
                 except TypeError as exc:
-                    raise TypeError(f"Field {f.name} must be an instance of FileConfig") from exc
+                    raise TypeError(
+                        f"Field {f.name} must be an instance of FileConfig"
+                    ) from exc
                 else:
                     setattr(self, f.name, config)
 
@@ -97,7 +119,6 @@ class DataclassDirectory:
 
             handler.write(full_path, this_data, overwrite_ok=overwrite_ok)
 
-
     def tree(self, level: int = 1, print_: bool = True) -> list[str]:
         elbow = "└──"
         pipe = "│  "
@@ -108,7 +129,9 @@ class DataclassDirectory:
         for i, f in enumerate(fields_):
             config = getattr(self, f.name)
 
-            lines += [level * pipe + (elbow if i == len(fields_) else tee) + config.path]
+            lines += [
+                level * pipe + (elbow if i == len(fields_) else tee) + config.path
+            ]
 
             if isinstance(config.handler, DataclassDirectory):
                 lines += config.handler.tree(level=level + 1, print_=False)

@@ -4,4 +4,5 @@ def test_dcdir_is_handler():
     assert isinstance(DataclassDirectory(), Handler)
 
 def test_tree():
-    d = DataClassDirectory
+    d = DataclassDirectory()
+    d.tree()
