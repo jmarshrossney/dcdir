@@ -4,7 +4,7 @@ import dataclasses
 import logging
 from os import PathLike
 from pathlib import Path
-from typing import Any, Protocol, runtime_checkable
+from typing import Any, Callable, Protocol, runtime_checkable
 
 logger = logging.getLogger(__name__)
 
@@ -18,11 +18,11 @@ class Handler(Protocol):
     def write(self, path: str | PathLike, data: Any, *, overwrite_ok: bool) -> None: ...
 
 
-_handler_registry: dict[str, type[Handler]] = {}
+_handler_registry: dict[str, Callable[[], Handler]] = {}
 
 
-def register_handler(extension: str, handler: type[Handler]) -> None:
-    # assert isinstance(handler, Handler)
+def register_handler(extension: str, handler: Callable[[], Handler]) -> None:
+    assert isinstance(handler(), Handler)
 
     assert isinstance(extension, str)
     assert extension.startswith(".")
@@ -38,7 +38,7 @@ def register_handler(extension: str, handler: type[Handler]) -> None:
 @dataclasses.dataclass
 class FileConfig:
     path: Path
-    handler: Handler
+    handler: Callable[[], Handler]
 
     def __post_init__(self) -> None:
         assert self.path is not None
@@ -52,7 +52,7 @@ class FileConfig:
 
         self.path = path
 
-        # TODO: check handler is a class adhering to Handler protocol
+        assert isinstance(self.handler(), Handler)
 
 
 @dataclasses.dataclass
@@ -99,7 +99,7 @@ class DataclassDirectory:
         for f in dataclasses.fields(self):
             config = getattr(self, f.name)
             full_path = path / config.path
-            handler = config.handler
+            handler = config.handler()
 
             data[f.name] = handler.read(full_path)
 
@@ -113,7 +113,7 @@ class DataclassDirectory:
         for f in dataclasses.fields(self):
             config = getattr(self, f.name)
             full_path = path / config.path
-            handler = config.handler
+            handler = config.handler()
 
             this_data = data[f.name]
 
@@ -128,11 +128,12 @@ class DataclassDirectory:
         fields = dataclasses.fields(self)
         for i, f in enumerate(fields):
             config = getattr(self, f.name)
+            handler = config.handler()
 
             lines += [level * pipe + (elbow if i == len(fields) else tee) + config.path]
 
-            if isinstance(config.handler, DataclassDirectory):
-                lines += config.handler.tree(level=level + 1, print_=False)
+            if isinstance(handler, DataclassDirectory):
+                lines += handler.tree(level=level + 1, print_=False)
 
         if print_:
             print("\n".join(lines))
@@ -140,6 +141,7 @@ class DataclassDirectory:
         return lines
 
 
+# TODO: make more flexible, e.g. fixed paths
 def make_dataclass_directory(
     cls_name: str,
     field_names: list[str],
