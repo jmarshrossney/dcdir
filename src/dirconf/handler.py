@@ -1,7 +1,9 @@
 from abc import abstractmethod
 from collections import OrderedDict
+import importlib
 import logging
 from os import PathLike
+import pathlib
 from typing import Any, Callable, Protocol, runtime_checkable
 
 logger = logging.getLogger(__name__)
@@ -37,3 +39,35 @@ def register_handler(
         "handler": handler,
         "extensions": extensions,
     }
+
+
+def parse_handler(input: str | Handler) -> Handler:
+    if isinstance(input, Handler):
+        handler = input
+    elif input in handler_registry:
+        handler = handler_registry[input]["handler"]
+    else:
+        assert isinstance(input, str)
+        module_name, class_name = input.rsplit(".", 1)
+        module = importlib.import_module(module_name)
+        handler = getattr(module, class_name)
+
+    return handler
+
+
+def infer_handler_from_path(path: str | PathLike) -> Handler:
+    extension = pathlib.Path(path).suffix
+    compatible_handlers = {
+        key: val["handler"]
+        for key, val in handler_registry.items()
+        if extension in val["extensions"]
+    }
+    if not compatible_handlers:
+        raise Exception(
+            f"No handler found for extension '{extension}' in the handler registry."
+        )
+    if len(compatible_handlers) > 1:
+        logger.warning(
+            f"Multiple compatible handlers found for extension '{extension}'."
+        )
+    return list(compatible_handlers.values())[0]

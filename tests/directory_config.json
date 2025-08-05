@@ -1,7 +1,7 @@
 {
     "afile": {},
     "bfile": {
-        "handler": "test_handler"
+        "handler": "test_dynamic_construction.HandlerTest"
     },
     "cfile": {
         "path": "cfile.txt",

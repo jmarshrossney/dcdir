@@ -6,7 +6,6 @@ from os import PathLike
 from pathlib import Path
 from typing import Any
 
-from .handler import handler_registry
 from .node import Node, path_to_node, to_node
 
 logger = logging.getLogger(__name__)
@@ -93,10 +92,7 @@ def _(config: dict, cls_name: str, **kwargs) -> type[DirectoryConfig]:
                 name,
                 Node,
                 dataclasses.field(
-                    init=False,
-                    default_factory=lambda: Node(
-                        path=path, handler=handler_registry[handler]["handler"]
-                    ),
+                    init=False, default_factory=lambda: Node(path, handler)
                 ),
             )
 

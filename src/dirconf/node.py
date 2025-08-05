@@ -4,7 +4,7 @@ from os import PathLike
 from pathlib import Path
 from typing import Callable
 
-from .handler import Handler, handler_registry
+from .handler import Handler, infer_handler_from_path, parse_handler
 
 logger = logging.getLogger(__name__)
 
@@ -15,22 +15,17 @@ class Node:
     handler: Callable[[], Handler]
 
     def __post_init__(self) -> None:
+        # Parsing + validation of path
         assert self.path is not None
         path = Path(self.path)
-
         # Do not allow absolute paths or paths include '..'
         if path.expanduser().is_absolute():
             raise Exception("`path` should be relative, not absolute")
         if not path.resolve().is_relative_to(Path.cwd()):
             raise Exception("`path` should not include '..'")
 
-        handler = self.handler
-        if isinstance(handler, str):
-            try:
-                handler = handler_registry[handler]["handler"]
-            except KeyError:
-                pass  # TODO: throw error here?
-
+        # Parsing + validation of handler
+        handler = parse_handler(self.handler)
         assert callable(handler)
         try:
             handler_inst = handler()
@@ -55,25 +50,7 @@ def path_to_node(
         if isinstance(path, dict):
             path = path["path"]
 
-        _handler = handler
-        if _handler is None:
-            extension = Path(path).suffix
-            compatible_handlers = {
-                key: val["handler"]
-                for key, val in handler_registry.items()
-                if extension in val["extensions"]
-            }
-            if not compatible_handlers:
-                raise Exception(
-                    f"No handler found for extension '{extension}' in the handler registry."
-                )
-            if len(compatible_handlers) > 1:
-                logger.warning(
-                    f"Multiple compatible handlers found for extension '{extension}'."
-                )
-            _handler = list(compatible_handlers.values())[0]
-
-        return Node(path=path, handler=_handler)
+        return Node(path=path, handler=handler or infer_handler_from_path(path))
 
     return transform
 
@@ -89,7 +66,3 @@ def to_node(input: Node | dict | str | PathLike) -> Node:
         raise TypeError(
             f"Unable to create Node object from input of type {type(input)}"
         )
-
-
-# TODO: a catch-all transform that's added to metadata by default, which works
-# when the dataclass was instantiated with a Node instance (not a dict).
