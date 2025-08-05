@@ -92,11 +92,14 @@ def _(config: dict, cls_name: str, **kwargs) -> type[DirectoryConfig]:
 
         # Both path and handler specified in config
         if path and handler:
+            # Must assign lambda function since path, handler change with
+            # each loop iteration!
+            Node_ = lambda: Node(path, handler)
             field = (
                 name,
                 Node,
                 dataclasses.field(
-                    init=False, default_factory=lambda: Node(path, handler)
+                    init=False, default_factory=Node_
                 ),
             )
 
