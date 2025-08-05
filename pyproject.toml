@@ -21,6 +21,7 @@ dev = [
 
 [tool.ruff]
 exclude = [
+    "tests",
     ".venv",
 ]
 line-length = 88

@@ -1,7 +1,6 @@
+from .handler import Handler as Handler, register_handler as register_handler
 from .dirconf import (
-    Handler as Handler,
-    register_handler as register_handler,
-    FileConfig as FileConfig,
-    DataclassDirectory as DataclassDirectory,
-    make_dataclass_directory as make_dataclass_directory,
+    Node as Node,
+    DirectoryConfig as DirectoryConfig,
+    make_directory_config as make_directory_config,
 )

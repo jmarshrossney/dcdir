@@ -1,42 +1,19 @@
-from abc import abstractmethod
 from collections.abc import Mapping
 import dataclasses
+import json
+import functools
 import logging
 from os import PathLike
 from pathlib import Path
-from typing import Any, Callable, Protocol, runtime_checkable
+from typing import Any, Callable
+
+from .handler import Handler, handler_registry
 
 logger = logging.getLogger(__name__)
 
 
-@runtime_checkable
-class Handler(Protocol):
-    @abstractmethod
-    def read(self, path: str | PathLike) -> Any: ...
-
-    @abstractmethod
-    def write(self, path: str | PathLike, data: Any, *, overwrite_ok: bool) -> None: ...
-
-
-_handler_registry: dict[str, Callable[[], Handler]] = {}
-
-
-def register_handler(extension: str, handler: Callable[[], Handler]) -> None:
-    assert isinstance(handler(), Handler)
-
-    assert isinstance(extension, str)
-    assert extension.startswith(".")
-
-    if extension in _handler_registry:
-        logger.warning(
-            f"Extension '{extension}' already exists in handler registry and will be overwritten!"
-        )
-
-    _handler_registry[extension] = handler
-
-
 @dataclasses.dataclass
-class FileConfig:
+class Node:
     path: Path
     handler: Callable[[], Handler]
 
@@ -50,47 +27,71 @@ class FileConfig:
         if not path.resolve().is_relative_to(Path.cwd()):
             raise Exception("`path` should not include '..'")
 
-        self.path = path
+        print("Handler is: ", self.handler)
 
-        assert isinstance(self.handler(), Handler)
+        handler = self.handler
+        if isinstance(handler, str):
+            try:
+                handler = handler_registry[handler]["handler"]
+            except KeyError:
+                pass  # TODO: throw error here?
+
+        assert callable(handler)
+        try:
+            handler_inst = handler()
+        except TypeError as exc:
+            raise Exception("`handler` must be a zero-argument callable!") from exc
+        else:
+            assert isinstance(handler_inst, Handler)
+
+        self.path = path
+        self.handler = handler
 
 
 @dataclasses.dataclass
-class DataclassDirectory:
+class DirectoryConfig:
     """Base dataclass to represent a directory."""
 
     def __post_init__(self) -> None:
         for f in dataclasses.fields(self):
             attr = getattr(self, f.name)
 
-            if isinstance(attr, FileConfig):
+            if isinstance(attr, Node):
                 continue
 
             elif isinstance(attr, (str, PathLike)):
                 # Only path provided
                 extension = Path(attr).suffix
-                try:
-                    handler = _handler_registry[extension]
-                except KeyError as exc:
+                handlers = {
+                    key: val["handler"]
+                    for key, val in handler_registry.items()
+                    if extension in val["extensions"]
+                }
+                if not handlers:
                     raise Exception(
                         f"No handler found for extension '{extension}' in the handler registry."
-                    ) from exc
-                else:
-                    setattr(self, f.name, FileConfig(path=attr, handler=handler))
+                    )
+                if len(handlers) > 1:
+                    logger.warning(
+                        f"More than one handler found for extension '{extension}': {handlers}."
+                    )
+                handler = list(handlers.values())[0]
+                logger.info("Using handler '{handler}' for field {f.name}")
+                setattr(self, f.name, Node(path=attr, handler=handler))
 
             elif isinstance(attr, Mapping):
-                # Mapping provided, attempt to create FileConfig with it
+                # Mapping provided, attempt to create Node with it
                 try:
-                    config = FileConfig(**attr)
+                    config = Node(**attr)
                 except TypeError as exc:
                     raise TypeError(
-                        f"Field {f.name} must be an instance of FileConfig"
+                        f"Field {f.name} must be an instance of Node"
                     ) from exc
                 else:
                     setattr(self, f.name, config)
 
             else:
-                raise TypeError(f"Field {f.name} must be an instance of FileConfig")
+                raise TypeError(f"Field {f.name} must be an instance of Node")
 
     def read(self, path: str | PathLike) -> dict[str, Any]:
         path = Path(path).resolve()
@@ -132,7 +133,7 @@ class DataclassDirectory:
 
             lines += [level * pipe + (elbow if i == len(fields) else tee) + config.path]
 
-            if isinstance(handler, DataclassDirectory):
+            if isinstance(handler, DirectoryConfig):
                 lines += handler.tree(level=level + 1, print_=False)
 
         if print_:
@@ -141,13 +142,66 @@ class DataclassDirectory:
         return lines
 
 
-# TODO: make more flexible, e.g. fixed paths
-def make_dataclass_directory(
-    cls_name: str,
-    field_names: list[str],
-) -> DataclassDirectory:
+@functools.singledispatch
+def _make_directory_config(config, cls_name: str, **kwargs) -> type[DirectoryConfig]:
+    raise NotImplementedError(f"Unsupported type: {type(config)}")
+
+
+@_make_directory_config.register
+def _(config: dict, cls_name: str, **kwargs) -> type[DirectoryConfig]:
+    fields = []
+    for name, spec in config.items():
+        path = spec.get("path", False)
+        handler = spec.get("handler", False)
+
+        if not path and not handler:
+            field = (name, Node)
+
+        elif path and handler:
+            field = (
+                name,
+                Node,
+                dataclasses.field(
+                    init=False,
+                    default_factory=lambda: Node(
+                        path=path, handler=handler_registry[handler]["handler"]
+                    ),
+                ),
+            )
+
+        elif "path" in spec and "handler" not in spec:
+            raise NotImplementedError
+
+        elif "path" not in spec and "handler" in spec:
+            raise NotImplementedError
+
+        else:
+            raise Exception("Misconfigured...")
+
+        fields.append(field)
+
     return dataclasses.make_dataclass(
         cls_name=cls_name,
-        fields=[(name, FileConfig) for name in field_names],
-        bases=(DataclassDirectory,),
+        fields=fields,
+        bases=(DirectoryConfig,),
+        **kwargs,
     )
+
+
+@_make_directory_config.register
+def _(config: PathLike, cls_name: str, **kwargs) -> type[DirectoryConfig]:
+    return _make_directory_config(json.load(config), cls_name, **kwargs)
+
+
+@_make_directory_config.register
+def _(config: str, cls_name: str, **kwargs) -> type[DirectoryConfig]:
+    try:
+        return _make_directory_config(Path(config), cls_name, **kwargs)
+    except TypeError:
+        return _make_directory_config(json.loads(config), cls_name, **kwargs)
+
+
+def make_directory_config(
+    cls_name: str, config: dict | str | PathLike, **kwargs
+) -> type[DirectoryConfig]:
+    return _make_directory_config(config, cls_name, **kwargs)

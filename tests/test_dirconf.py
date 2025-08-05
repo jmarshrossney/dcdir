@@ -1,8 +1,10 @@
-from dirconf import Handler, FileConfig, DataclassDirectory
+from dirconf import Handler, DirectoryConfig
+
 
 def test_dir_is_handler():
-    assert isinstance(DataclassDirectory(), Handler)
+    assert isinstance(DirectoryConfig(), Handler)
+
 
 def test_tree():
-    d = DataclassDirectory()
+    d = DirectoryConfig()
     d.tree()
