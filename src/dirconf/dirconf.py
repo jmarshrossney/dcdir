@@ -1,51 +1,15 @@
-from collections.abc import Mapping
 import dataclasses
 import json
 import functools
 import logging
 from os import PathLike
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
-from .handler import Handler, handler_registry
+from .handler import handler_registry
+from .node import Node, path_to_node, to_node
 
 logger = logging.getLogger(__name__)
-
-
-@dataclasses.dataclass
-class Node:
-    path: Path
-    handler: Callable[[], Handler]
-
-    def __post_init__(self) -> None:
-        assert self.path is not None
-        path = Path(self.path)
-
-        # Do not allow absolute paths or paths include '..'
-        if path.expanduser().is_absolute():
-            raise Exception("`path` should be relative, not absolute")
-        if not path.resolve().is_relative_to(Path.cwd()):
-            raise Exception("`path` should not include '..'")
-
-        print("Handler is: ", self.handler)
-
-        handler = self.handler
-        if isinstance(handler, str):
-            try:
-                handler = handler_registry[handler]["handler"]
-            except KeyError:
-                pass  # TODO: throw error here?
-
-        assert callable(handler)
-        try:
-            handler_inst = handler()
-        except TypeError as exc:
-            raise Exception("`handler` must be a zero-argument callable!") from exc
-        else:
-            assert isinstance(handler_inst, Handler)
-
-        self.path = path
-        self.handler = handler
 
 
 @dataclasses.dataclass
@@ -53,56 +17,25 @@ class DirectoryConfig:
     """Base dataclass to represent a directory."""
 
     def __post_init__(self) -> None:
-        for f in dataclasses.fields(self):
-            attr = getattr(self, f.name)
+        for field in dataclasses.fields(self):
+            if (transform := field.metadata.get("transform")) is not None:
+                # Apply transform if specified
+                setattr(self, field.name, transform(getattr(self, field.name)))
 
-            if isinstance(attr, Node):
-                continue
-
-            elif isinstance(attr, (str, PathLike)):
-                # Only path provided
-                extension = Path(attr).suffix
-                handlers = {
-                    key: val["handler"]
-                    for key, val in handler_registry.items()
-                    if extension in val["extensions"]
-                }
-                if not handlers:
-                    raise Exception(
-                        f"No handler found for extension '{extension}' in the handler registry."
-                    )
-                if len(handlers) > 1:
-                    logger.warning(
-                        f"More than one handler found for extension '{extension}': {handlers}."
-                    )
-                handler = list(handlers.values())[0]
-                logger.info("Using handler '{handler}' for field {f.name}")
-                setattr(self, f.name, Node(path=attr, handler=handler))
-
-            elif isinstance(attr, Mapping):
-                # Mapping provided, attempt to create Node with it
-                try:
-                    config = Node(**attr)
-                except TypeError as exc:
-                    raise TypeError(
-                        f"Field {f.name} must be an instance of Node"
-                    ) from exc
-                else:
-                    setattr(self, f.name, config)
-
-            else:
-                raise TypeError(f"Field {f.name} must be an instance of Node")
+            if not isinstance(getattr(self, field.name), Node):
+                # try to coerce to a Node
+                setattr(self, field.name, to_node(getattr(self, field.name)))
 
     def read(self, path: str | PathLike) -> dict[str, Any]:
         path = Path(path).resolve()
         data = {}
 
-        for f in dataclasses.fields(self):
-            config = getattr(self, f.name)
+        for field in dataclasses.fields(self):
+            config = getattr(self, field.name)
             full_path = path / config.path
             handler = config.handler()
 
-            data[f.name] = handler.read(full_path)
+            data[field.name] = handler.read(full_path)
 
         return data
 
@@ -111,12 +44,12 @@ class DirectoryConfig:
     ) -> None:
         path = Path(path).resolve()
 
-        for f in dataclasses.fields(self):
-            config = getattr(self, f.name)
+        for field in dataclasses.fields(self):
+            config = getattr(self, field.name)
             full_path = path / config.path
             handler = config.handler()
 
-            this_data = data[f.name]
+            this_data = data[field.name]
 
             handler.write(full_path, this_data, overwrite_ok=overwrite_ok)
 
@@ -154,10 +87,8 @@ def _(config: dict, cls_name: str, **kwargs) -> type[DirectoryConfig]:
         path = spec.get("path", False)
         handler = spec.get("handler", False)
 
-        if not path and not handler:
-            field = (name, Node)
-
-        elif path and handler:
+        # Both path and handler specified in config
+        if path and handler:
             field = (
                 name,
                 Node,
@@ -169,14 +100,23 @@ def _(config: dict, cls_name: str, **kwargs) -> type[DirectoryConfig]:
                 ),
             )
 
-        elif "path" in spec and "handler" not in spec:
-            raise NotImplementedError
+        # Only handler specified
+        elif handler and not path:
+            field = (
+                name,
+                Node,
+                dataclasses.field(metadata={"transform": path_to_node(handler)}),
+            )
 
-        elif "path" not in spec and "handler" in spec:
-            raise NotImplementedError
+        # Only path specified
+        elif path and not handler:
+            raise NotImplementedError(
+                f"A handler should be specified for the path '{path}'."
+            )
 
+        # Neither path nor handler specified
         else:
-            raise Exception("Misconfigured...")
+            field = (name, Node, dataclasses.field(metadata={"transform": to_node}))
 
         fields.append(field)
 
@@ -190,15 +130,17 @@ def _(config: dict, cls_name: str, **kwargs) -> type[DirectoryConfig]:
 
 @_make_directory_config.register
 def _(config: PathLike, cls_name: str, **kwargs) -> type[DirectoryConfig]:
-    return _make_directory_config(json.load(config), cls_name, **kwargs)
+    with open(config, "r") as file:
+        loaded_config = json.load(file)
+    return _make_directory_config(loaded_config, cls_name, **kwargs)
 
 
 @_make_directory_config.register
 def _(config: str, cls_name: str, **kwargs) -> type[DirectoryConfig]:
     try:
-        return _make_directory_config(Path(config), cls_name, **kwargs)
-    except TypeError:
         return _make_directory_config(json.loads(config), cls_name, **kwargs)
+    except json.decoder.JSONDecodeError:
+        return _make_directory_config(Path(config), cls_name, **kwargs)
 
 
 def make_directory_config(

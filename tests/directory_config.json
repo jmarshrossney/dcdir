@@ -1,15 +1,10 @@
 {
     "afile": {},
     "bfile": {
-        "path": "bfile.txt",
         "handler": "test_handler"
     },
     "cfile": {
         "path": "cfile.txt",
-        "handler": "test_handler"
-    },
-    "dfile": {
-        "path": "dfile.txt",
         "handler": "test_handler"
     }
 }

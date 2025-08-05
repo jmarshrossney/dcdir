@@ -45,16 +45,30 @@ def dict_config(path_config) -> dict:
 
 
 def test_dict_config(dict_config):
+    _ = make_directory_config("TestConfig", dict_config)
+
+
+def test_str_config(str_config):
+    _ = make_directory_config("TestConfig", str_config)
+
+
+def test_path_config(path_config):
+    _ = make_directory_config("TestConfig", path_config)
+
+
+def test_path_config_as_str(path_config_as_str):
+    _ = make_directory_config("TestConfig", path_config_as_str)
+
+
+def test_instantiation(dict_config):
     class_ = make_directory_config("TestConfig", dict_config)
-
-
-def _test_str_config(str_config):
-    class_ = make_directory_config("TestConfig", str_config)
-
-
-def _test_path_config(path_config):
-    class_ = make_directory_config("TestConfig", path_config)
-
-
-def _test_path_config_as_str(path_config_as_str):
-    class_ = make_directory_config("TestConfig", path_config_as_str)
+    # Test bfile given as path
+    _ = class_(
+            afile={"path": "afile.txt", "handler": "test_handler"},
+            bfile="bfile.txt",
+    )
+    # Test bfile given as single-element dict
+    _ = class_(
+            afile={"path": "afile.txt", "handler": "test_handler"},
+            bfile={"path": "bfile.txt"},
+    )
