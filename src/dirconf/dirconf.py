@@ -43,6 +43,10 @@ class DirectoryConfig:
     ) -> None:
         path = Path(path).resolve()
 
+        if not path.is_dir():
+            logger.info(f"Creating new directory at '{path}'")
+            path.mkdir(parents=True)
+
         for field in dataclasses.fields(self):
             config = getattr(self, field.name)
             full_path = path / config.path
