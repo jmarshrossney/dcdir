@@ -1,4 +1,4 @@
-from .dcdir import (
+from .dirconf import (
     Handler as Handler,
     register_handler as register_handler,
     FileConfig as FileConfig,

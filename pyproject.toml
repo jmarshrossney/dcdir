@@ -3,12 +3,12 @@ requires = ["setuptools>=64"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "dcdir"
+name = "dirconf"
 version = "0.1.0"
 authors = [
     {name = "Joe Marsh Rossney", email = "17361029+jmarshrossney@users.noreply.github.com"}
 ]
-description = "Add your description here"
+description = "Simple directory configuration using Python dataclasses."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = []

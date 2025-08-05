@@ -12,7 +12,7 @@ wheels = [
 ]
 
 [[package]]
-name = "dcdir"
+name = "dirconf"
 version = "0.1.0"
 source = { editable = "." }
 
