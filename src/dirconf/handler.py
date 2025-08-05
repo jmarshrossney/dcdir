@@ -41,16 +41,17 @@ def register_handler(
     }
 
 
-def parse_handler(input: str | Handler) -> Handler:
-    if isinstance(input, Handler):
-        handler = input
-    elif input in handler_registry:
+def parse_handler(input: str | Callable[[], Handler]) -> Callable[[], Handler]:
+    if input in handler_registry:
         handler = handler_registry[input]["handler"]
-    else:
-        assert isinstance(input, str)
+    elif isinstance(input, str):
         module_name, class_name = input.rsplit(".", 1)
         module = importlib.import_module(module_name)
         handler = getattr(module, class_name)
+    elif callable(input) and isinstance(input(), Handler):
+        handler = input
+    else:
+        raise Exception(f"Invalid handler: '{input}'")
 
     return handler
 
