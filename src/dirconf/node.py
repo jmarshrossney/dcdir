@@ -20,9 +20,9 @@ class Node:
         path = Path(self.path)
         # Do not allow absolute paths or paths include '..'
         if path.expanduser().is_absolute():
-            raise Exception("`path` should be relative, not absolute")
+            raise ValueError("`path` should be relative, not absolute")
         if not path.resolve().is_relative_to(Path.cwd()):
-            raise Exception("`path` should not include '..'")
+            raise ValueError("`path` should not include '..'")
 
         # Parsing + validation of handler
         handler = parse_handler(self.handler)
@@ -30,7 +30,7 @@ class Node:
         try:
             handler_inst = handler()
         except TypeError as exc:
-            raise Exception("`handler` must be a zero-argument callable!") from exc
+            raise TypeError("`handler` must be a zero-argument callable!") from exc
         else:
             assert isinstance(handler_inst, Handler)
 

@@ -51,7 +51,7 @@ def parse_handler(input: str | Callable[[], Handler]) -> Callable[[], Handler]:
     elif callable(input) and isinstance(input(), Handler):
         handler = input
     else:
-        raise Exception(f"Invalid handler: '{input}'")
+        raise TypeError(f"Invalid handler: '{input}'")
 
     return handler
 
