@@ -92,16 +92,16 @@ def _(config: dict, cls_name: str, **kwargs) -> type[DirectoryConfig]:
 
         # Both path and handler specified in config
         if path and handler:
-            # Must assign lambda function since path, handler change with
-            # each loop iteration!
-            Node_ = lambda: Node(path, handler)
             field = (
                 name,
                 Node,
                 dataclasses.field(
-                    init=False, default_factory=Node_
+                    init=False, default_factory=lambda p=path, h=handler: Node(p, h)
                 ),
             )
+            # Note that the *current* values of path, handler are bound to the lambda
+            # function through the explicit arguments. That is, `lambda: Node(path, handler)`
+            # is wrong since the path, handler will be the values from the final iteration!
 
         # Only handler specified
         elif handler and not path:
