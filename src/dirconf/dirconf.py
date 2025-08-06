@@ -26,7 +26,7 @@ class DirectoryConfig:
                 setattr(self, field.name, to_node(getattr(self, field.name)))
 
     def read(self, path: str | PathLike) -> dict[str, Any]:
-        path = Path(path).resolve()
+        path = Path(path)
         data = {}
 
         for field in dataclasses.fields(self):
@@ -41,10 +41,10 @@ class DirectoryConfig:
     def write(
         self, path: str | PathLike, data: dict[str, Any], *, overwrite_ok: bool = False
     ) -> None:
-        path = Path(path).resolve()
+        path = Path(path)
 
         if not path.is_dir():
-            logger.info(f"Creating new directory at '{path}'")
+            logger.info(f"Creating new directory at '{path.resolve()}'")
             path.mkdir(parents=True)
 
         for field in dataclasses.fields(self):
