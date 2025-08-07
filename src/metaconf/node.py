@@ -58,11 +58,11 @@ def path_to_node(
 def to_node(input: Node | dict | str | PathLike) -> Node:
     if isinstance(input, Node):
         return input
-    elif isinstance(input, dict):
+    if isinstance(input, dict) and "handler" in input:
         return dict_to_node(input)
-    elif isinstance(input, (str, PathLike)):
+    if isinstance(input, (str, PathLike)) or (
+        isinstance(input, dict) and "handler" not in input
+    ):
         return path_to_node()(input)
-    else:
-        raise TypeError(
-            f"Unable to create Node object from input of type {type(input)}"
-        )
+
+    raise TypeError(f"Unable to create Node object from input of type {type(input)}")

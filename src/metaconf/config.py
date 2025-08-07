@@ -4,7 +4,7 @@ import functools
 import logging
 from os import PathLike
 from pathlib import Path
-from typing import Any
+from typing import Any, Self
 
 from .node import Node, path_to_node, to_node
 
@@ -24,6 +24,10 @@ class MetaConfig:
             if not isinstance(getattr(self, field.name), Node):
                 # try to coerce to a Node
                 setattr(self, field.name, to_node(getattr(self, field.name)))
+
+    def __call__(self) -> Self:
+        # TODO: figure out if this is sufficient for nested MetaConfig objects
+        return type(self)(**dataclasses.asdict(self))
 
     def read(self, path: str | PathLike) -> dict[str, Any]:
         path = Path(path)
@@ -78,13 +82,7 @@ class MetaConfig:
         return lines
 
 
-@functools.singledispatch
-def _make_directory_config(config, cls_name: str, **kwargs) -> type[MetaConfig]:
-    raise NotImplementedError(f"Unsupported type: {type(config)}")
-
-
-@_make_directory_config.register
-def _(config: dict, cls_name: str, **kwargs) -> type[MetaConfig]:
+def _make_metaconfig(cls_name: str, config: dict, **kwargs) -> type[MetaConfig]:
     fields = []
     for name, spec in config.items():
         path = spec.get("path", False)
@@ -131,22 +129,38 @@ def _(config: dict, cls_name: str, **kwargs) -> type[MetaConfig]:
     )
 
 
-@_make_directory_config.register
-def _(config: PathLike, cls_name: str, **kwargs) -> type[MetaConfig]:
-    with open(config, "r") as file:
-        loaded_config = json.load(file)
-    return _make_directory_config(loaded_config, cls_name, **kwargs)
-
-
-@_make_directory_config.register
-def _(config: str, cls_name: str, **kwargs) -> type[MetaConfig]:
+def _str_is_json(s: str) -> bool:
     try:
-        return _make_directory_config(json.loads(config), cls_name, **kwargs)
-    except json.decoder.JSONDecodeError:
-        return _make_directory_config(Path(config), cls_name, **kwargs)
+        json.loads(s)
+        return True
+    except json.JSONDecodeError:
+        return False
+
+
+def _str_is_path(s: str) -> bool:
+    try:
+        path = Path(s)
+        return path.exists() or path.is_absolute() or path.is_relative_to(Path.cwd())
+    except (OSError, ValueError):
+        return False
 
 
 def make_metaconfig(
     cls_name: str, config: dict | str | PathLike, **kwargs
 ) -> type[MetaConfig]:
-    return _make_directory_config(config, cls_name, **kwargs)
+    config_dict = None
+
+    if isinstance(config, dict):
+        return _make_metaconfig(cls_name, config, **kwargs)
+
+    if isinstance(config, str) and _str_is_json(config):
+        return _make_metaconfig(cls_name, json.loads(config), **kwargs)
+
+    if isinstance(config, PathLike) or (
+        isinstance(config, str) and _str_is_path(config)
+    ):
+        with open(config, "r") as file:
+            loaded_config = json.load(file)
+        return _make_metaconfig(cls_name, loaded_config, **kwargs)
+
+    raise TypeError(f"Unsupported type: {type(config)}")
