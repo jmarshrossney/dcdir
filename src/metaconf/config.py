@@ -1,6 +1,5 @@
 import dataclasses
 import json
-import functools
 import logging
 from os import PathLike
 from pathlib import Path
@@ -148,8 +147,6 @@ def _str_is_path(s: str) -> bool:
 def make_metaconfig(
     cls_name: str, config: dict | str | PathLike, **kwargs
 ) -> type[MetaConfig]:
-    config_dict = None
-
     if isinstance(config, dict):
         return _make_metaconfig(cls_name, config, **kwargs)
 

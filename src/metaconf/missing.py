@@ -2,6 +2,7 @@ import functools
 from os import PathLike
 from pathlib import Path
 from typing import Callable, Any
+import warnings
 
 from .handler import Handler
 
@@ -10,35 +11,8 @@ class MISSING:
     """A sentinal value that may be used in place of missing data."""
 
 
-# TODO: consider adding logging
-
-
-def handle_missing_in_read(
-    test: Callable[[Path], bool] = lambda path: path.exists(),
-):
-    def decorator(reader):
-        @functools.wraps(reader)
-        def wrapper(self, path: str | PathLike):
-            return reader(self, path) if test(Path(path)) else MISSING
-
-        return wrapper
-
-    return decorator
-
-
-def handle_missing_in_write(
-    test: Callable[[Path, Any, ...], bool] = (
-        lambda path, data, **_: data is not MISSING
-    ),
-):
-    def decorator(writer):
-        @functools.wraps(writer)
-        def wrapper(self, path: str | PathLike, data: Any, **kwargs):
-            test(Path(path), data, **kwargs) and writer(self, path, data, **kwargs)
-
-        return wrapper
-
-    return decorator
+class MissingWarning(Warning):
+    pass
 
 
 def handle_missing(
@@ -53,13 +27,25 @@ def handle_missing(
 
         @functools.wraps(original_read)
         def wrapped_read(self, path: str | PathLike) -> Any:
-            return original_read(self, path) if test_on_read(Path(path)) else MISSING
+            if not test_on_read(Path(path)):
+                warnings.warn(
+                    f"Missingness test failed for path '{path}'; returning `MISSING`.",
+                    MissingWarning,
+                )
+                return MISSING
+
+            return original_read(self, path)
 
         @functools.wraps(original_write)
         def wrapped_write(self, path: str | PathLike, data: Any, **kwargs) -> None:
-            test_on_write(Path(path), data, **kwargs) and original_write(
-                self, path, data, **kwargs
-            )
+            if not test_on_write(Path(path), data, **kwargs):
+                warnings.warn(
+                    f"Missingness test failed for path '{path}'; Skipping write...",
+                    MissingWarning,
+                )
+                return
+
+            return original_write(self, path, data, **kwargs)
 
         cls.read = wrapped_read
         cls.write = wrapped_write

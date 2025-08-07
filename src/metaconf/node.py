@@ -1,12 +1,9 @@
 import dataclasses
-import logging
 from os import PathLike
 from pathlib import Path
 from typing import Callable
 
 from .handler import Handler, infer_handler_from_path, parse_handler
-
-logger = logging.getLogger(__name__)
 
 
 @dataclasses.dataclass
