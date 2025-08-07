@@ -12,8 +12,8 @@ logger = logging.getLogger(__name__)
 
 
 @dataclasses.dataclass
-class DirectoryConfig:
-    """Base dataclass to represent a directory."""
+class MetaConfig:
+    """A base dataclass representing a collection of configuration files."""
 
     def __post_init__(self) -> None:
         for field in dataclasses.fields(self):
@@ -69,7 +69,7 @@ class DirectoryConfig:
 
             lines += [level * pipe + (elbow if i == len(fields) else tee) + config.path]
 
-            if isinstance(handler, DirectoryConfig):
+            if isinstance(handler, MetaConfig):
                 lines += handler.tree(level=level + 1, print_=False)
 
         if print_:
@@ -79,12 +79,12 @@ class DirectoryConfig:
 
 
 @functools.singledispatch
-def _make_directory_config(config, cls_name: str, **kwargs) -> type[DirectoryConfig]:
+def _make_directory_config(config, cls_name: str, **kwargs) -> type[MetaConfig]:
     raise NotImplementedError(f"Unsupported type: {type(config)}")
 
 
 @_make_directory_config.register
-def _(config: dict, cls_name: str, **kwargs) -> type[DirectoryConfig]:
+def _(config: dict, cls_name: str, **kwargs) -> type[MetaConfig]:
     fields = []
     for name, spec in config.items():
         path = spec.get("path", False)
@@ -126,27 +126,27 @@ def _(config: dict, cls_name: str, **kwargs) -> type[DirectoryConfig]:
     return dataclasses.make_dataclass(
         cls_name=cls_name,
         fields=fields,
-        bases=(DirectoryConfig,),
+        bases=(MetaConfig,),
         **kwargs,
     )
 
 
 @_make_directory_config.register
-def _(config: PathLike, cls_name: str, **kwargs) -> type[DirectoryConfig]:
+def _(config: PathLike, cls_name: str, **kwargs) -> type[MetaConfig]:
     with open(config, "r") as file:
         loaded_config = json.load(file)
     return _make_directory_config(loaded_config, cls_name, **kwargs)
 
 
 @_make_directory_config.register
-def _(config: str, cls_name: str, **kwargs) -> type[DirectoryConfig]:
+def _(config: str, cls_name: str, **kwargs) -> type[MetaConfig]:
     try:
         return _make_directory_config(json.loads(config), cls_name, **kwargs)
     except json.decoder.JSONDecodeError:
         return _make_directory_config(Path(config), cls_name, **kwargs)
 
 
-def make_directory_config(
+def make_metaconfig(
     cls_name: str, config: dict | str | PathLike, **kwargs
-) -> type[DirectoryConfig]:
+) -> type[MetaConfig]:
     return _make_directory_config(config, cls_name, **kwargs)
