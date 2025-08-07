@@ -18,11 +18,13 @@ class Handler(Protocol):
     def write(self, path: str | PathLike, data: Any, *, overwrite_ok: bool) -> None: ...
 
 
+type HandlerFactory = Callable[[], Handler]
+
 handler_registry: OrderedDict = OrderedDict({})
 
 
 def register_handler(
-    name: str, handler: Callable[[], Handler], extensions: list[str] = []
+    name: str, handler: HandlerFactory, extensions: list[str] = []
 ) -> None:
     if name in handler_registry:
         logger.warning(
@@ -41,7 +43,7 @@ def register_handler(
     }
 
 
-def parse_handler(input: str | Callable[[], Handler]) -> Callable[[], Handler]:
+def parse_handler(input: str | HandlerFactory) -> HandlerFactory:
     if input in handler_registry:
         handler = handler_registry[input]["handler"]
     elif isinstance(input, str):
@@ -56,7 +58,7 @@ def parse_handler(input: str | Callable[[], Handler]) -> Callable[[], Handler]:
     return handler
 
 
-def infer_handler_from_path(path: str | PathLike) -> Handler:
+def infer_handler_from_path(path: str | PathLike) -> HandlerFactory:
     extension = pathlib.Path(path).suffix
     compatible_handlers = {
         key: val["handler"]

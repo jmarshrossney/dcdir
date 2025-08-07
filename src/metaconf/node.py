@@ -3,13 +3,13 @@ from os import PathLike
 from pathlib import Path
 from typing import Callable
 
-from .handler import Handler, infer_handler_from_path, parse_handler
+from .handler import Handler, HandlerFactory, infer_handler_from_path, parse_handler
 
 
 @dataclasses.dataclass
 class Node:
     path: Path
-    handler: Callable[[], Handler]
+    handler: HandlerFactory
 
     def __post_init__(self) -> None:
         # Parsing + validation of path
@@ -40,7 +40,7 @@ def dict_to_node(path_and_handler: dict) -> Node:
 
 
 def path_to_node(
-    handler: Callable[[], Handler] | None = None,
+    handler: HandlerFactory | None = None,
 ) -> Callable[str | PathLike, Node]:
     def transform(path: str | PathLike | dict[str, str | PathLike]) -> Node:
         # Might pass argument as single-element dict {"path": path}
