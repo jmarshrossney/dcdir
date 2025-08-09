@@ -24,8 +24,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
 
     - name: Install the project
-      run: |
-        uv sync --locked --dev
+      run: uv sync --locked --dev
 
     - name: Lint and format
       run: |
@@ -33,5 +32,4 @@ jobs:
         uv run ruff format --check
 
     - name: Test package
-      run: |
-        uv run pytest
+      run: uv run pytest
