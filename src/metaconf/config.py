@@ -3,7 +3,7 @@ import json
 import logging
 from os import PathLike
 from pathlib import Path
-from typing import Any, Self
+from typing import Any, Iterator, Self
 
 from .node import Node, path_to_node, to_node
 from .utils import switch_dir
@@ -57,26 +57,60 @@ class MetaConfig:
 
                 handler.write(config.path, data[field.name], overwrite_ok=overwrite_ok)
 
-    def tree(self, level: int = 1, print_: bool = True) -> list[str]:
-        elbow = "└──"
+    def nodes(self, recurse: bool = False) -> Iterator[Node]:
+        for field in dataclasses.fields(self):
+            node = getattr(self, field.name)
+
+            yield node
+
+            if recurse and isinstance(handler := node.handler(), MetaConfig):
+                yield from handler.nodes()
+
+    def _tree(
+        self, prefix: str, depth: int, max_depth: int | None, details: bool
+    ) -> Iterator[str]:
+        fields = dataclasses.fields(self)
+
+        # Avoid crashing in case of base class with no fields
+        if not fields:
+            return
+
+        blank = "   "
         pipe = "│  "
         tee = "├──"
-        blank = "   "
-        lines = []
-        fields = dataclasses.fields(self)
-        for i, f in enumerate(fields):
-            config = getattr(self, f.name)
+        elbow = "└──"
+        pointers = [tee] * (len(fields) - 1) + [elbow]
+        longest_name = max([len(field.name) for field in fields])
+
+        for pointer, field in zip(pointers, fields):
+            config = getattr(self, field.name)
             handler = config.handler()
 
-            lines += [level * pipe + (elbow if i == len(fields) else tee) + config.path]
+            if details:
+                separator = " " + "-" * (longest_name + 4 - len(field.name)) + " "
+                node_repr = f"(path='{config.path}', handler={type(handler).__name__})"
+            else:
+                separator, node_repr = "", ""
 
-            if isinstance(handler, MetaConfig):
-                lines += handler.tree(level=level + 1, print_=False)
+            yield prefix + pointer + field.name + separator + node_repr
 
-        if print_:
-            print("\n".join(lines))
+            if depth < (max_depth or depth + 1) and isinstance(handler, MetaConfig):
+                extension = pipe if pointer == tee else blank
 
-        return lines
+                yield from handler._tree(
+                    prefix=prefix + extension,
+                    depth=depth + 1,
+                    max_depth=max_depth,
+                    details=details,
+                )
+
+    def tree(self, max_depth: int | None = None, details: bool = True) -> str:
+        return "\n".join(
+            list(self._tree(prefix="", depth=1, max_depth=max_depth, details=details))
+        )
+
+    def __str__(self) -> str:
+        return f"{type(self).__module__}.{type(self).__name__}\n{self.tree()}"
 
 
 def _make_metaconfig(cls_name: str, config: dict, **kwargs) -> type[MetaConfig]:
