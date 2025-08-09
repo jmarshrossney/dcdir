@@ -69,12 +69,16 @@ class MetaConfig:
     def _tree(
         self, prefix: str, depth: int, max_depth: int | None, details: bool
     ) -> Iterator[str]:
+        fields = dataclasses.fields(self)
+
+        # Avoid crashing in case of base class with no fields
+        if not fields:
+            return
+
         blank = "   "
         pipe = "│  "
         tee = "├──"
         elbow = "└──"
-
-        fields = dataclasses.fields(self)
         pointers = [tee] * (len(fields) - 1) + [elbow]
         longest_name = max([len(field.name) for field in fields])
 
@@ -92,6 +96,7 @@ class MetaConfig:
 
             if depth < (max_depth or depth + 1) and isinstance(handler, MetaConfig):
                 extension = pipe if pointer == tee else blank
+
                 yield from handler._tree(
                     prefix=prefix + extension,
                     depth=depth + 1,
