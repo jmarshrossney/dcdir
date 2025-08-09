@@ -1,0 +1,70 @@
+site_name: metaconf
+site_description: Documentation for the `metaconf` Python package.
+site_url: https://jmarshrossney.github.io/metaconf
+
+repo_url: https://github.com/jmarshrossney/metaconf
+repo_name: jmarshrossney/metaconf
+
+# NOTE: we can switch this to `true` when we publish the docs, since it
+# leads to nicer urls, but `false` means we can browse the docs locally
+# by simply opening `index.html`, without `mkdocs serve`.
+use_directory_urls: false
+
+theme:
+  name: material
+  features:
+    - content.code.annotate  # allow code annotations
+    - navigation.sections  # include sections in left navigation
+    - toc.integrate  # toc integrated into left navigation
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: green
+      toggle:
+        icon: material/brightness-3
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: green
+      toggle:
+        icon: material/brightness-7
+        name: Switch to light mode
+  icon:
+    repo: fontawesome/brands/github
+
+markdown_extensions:
+  - admonition
+  - footnotes
+  - pymdownx.details
+  - pymdownx.caret  # Superscipt using ^x^
+  - pymdownx.tilde  # Subscript using ~x~
+  - pymdownx.superfences
+  - toc:
+      permalink: "⚓"
+
+plugins:
+  - autorefs
+  - markdown-exec
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            docstring_section_style: spacy
+            separate_signature: true #false
+            show_signature: true
+            signature_crossrefs: true
+            show_signature_annotations: true
+            show_if_no_docstring: false
+            show_root_heading: true
+            show_source: false
+          paths: [src]
+  - search
+
+nav:
+  - Home: index.md
+  - Examples: examples.md
+  - API Reference: api.md
+
+
