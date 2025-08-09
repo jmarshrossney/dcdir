@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Self
 
 from .node import Node, path_to_node, to_node
+from .utils import switch_dir
 
 logger = logging.getLogger(__name__)
 
@@ -29,15 +30,14 @@ class MetaConfig:
         return type(self)(**dataclasses.asdict(self))
 
     def read(self, path: str | PathLike) -> dict[str, Any]:
-        path = Path(path)
         data = {}
 
-        for field in dataclasses.fields(self):
-            config = getattr(self, field.name)
-            full_path = path / config.path
-            handler = config.handler()
+        with switch_dir(path):
+            for field in dataclasses.fields(self):
+                config = getattr(self, field.name)
+                handler = config.handler()
 
-            data[field.name] = handler.read(full_path)
+                data[field.name] = handler.read(config.path)
 
         return data
 
@@ -50,14 +50,12 @@ class MetaConfig:
             logger.info(f"Creating new directory at '{path.resolve()}'")
             path.mkdir(parents=True)
 
-        for field in dataclasses.fields(self):
-            config = getattr(self, field.name)
-            full_path = path / config.path
-            handler = config.handler()
+        with switch_dir(path):
+            for field in dataclasses.fields(self):
+                config = getattr(self, field.name)
+                handler = config.handler()
 
-            this_data = data[field.name]
-
-            handler.write(full_path, this_data, overwrite_ok=overwrite_ok)
+                handler.write(config.path, data[field.name], overwrite_ok=overwrite_ok)
 
     def tree(self, level: int = 1, print_: bool = True) -> list[str]:
         elbow = "└──"

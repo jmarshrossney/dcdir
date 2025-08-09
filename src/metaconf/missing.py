@@ -29,7 +29,7 @@ def handle_missing(
         def wrapped_read(self, path: str | PathLike) -> Any:
             if not test_on_read(Path(path)):
                 warnings.warn(
-                    f"Missingness test failed for path '{path}'; returning `MISSING`.",
+                    f'read("{path}") failed missingness test; returning `MISSING`.',
                     MissingWarning,
                 )
                 return MISSING
@@ -40,7 +40,7 @@ def handle_missing(
         def wrapped_write(self, path: str | PathLike, data: Any, **kwargs) -> None:
             if not test_on_write(Path(path), data, **kwargs):
                 warnings.warn(
-                    f"Missingness test failed for path '{path}'; Skipping write...",
+                    f'write("{path}") failed missingness test; Skipping...',
                     MissingWarning,
                 )
                 return
