@@ -16,6 +16,9 @@ class MetaConfig:
     """A base dataclass representing a collection of configuration files."""
 
     def __post_init__(self) -> None:
+        """
+        Apply transformations to coerce arguments into Node.
+        """
         for field in dataclasses.fields(self):
             if (transform := field.metadata.get("transform")) is not None:
                 # Apply transform if specified
@@ -30,6 +33,7 @@ class MetaConfig:
         return type(self)(**dataclasses.asdict(self))
 
     def read(self, path: str | PathLike) -> dict[str, Any]:
+        """Read a configuration from `path` and return its contents as a dict."""
         data = {}
 
         with switch_dir(path):
@@ -44,6 +48,7 @@ class MetaConfig:
     def write(
         self, path: str | PathLike, data: dict[str, Any], *, overwrite_ok: bool = False
     ) -> None:
+        """Write a configuration dict to a given path."""
         path = Path(path)
 
         if not path.is_dir():
@@ -58,6 +63,7 @@ class MetaConfig:
                 handler.write(config.path, data[field.name], overwrite_ok=overwrite_ok)
 
     def nodes(self, recurse: bool = False) -> Iterator[Node]:
+        """An iterator over all nodes (fields) in the meta-configuration."""
         for field in dataclasses.fields(self):
             node = getattr(self, field.name)
 
@@ -105,6 +111,10 @@ class MetaConfig:
                 )
 
     def tree(self, max_depth: int | None = None, details: bool = True) -> str:
+        """Returns a hierarchical tree-like representation of the configuration.
+
+        This is inspired by GNU `tree`
+        """
         return "\n".join(
             list(self._tree(prefix="", depth=1, max_depth=max_depth, details=details))
         )
@@ -179,6 +189,7 @@ def _str_is_path(s: str) -> bool:
 def make_metaconfig(
     cls_name: str, config: dict | str | PathLike, **kwargs
 ) -> type[MetaConfig]:
+    """A wrapper around `dataclasses.make_dataclass` that makes MetaConfig."""
     if isinstance(config, dict):
         return _make_metaconfig(cls_name, config, **kwargs)
 
