@@ -4,7 +4,7 @@ import importlib
 import logging
 from os import PathLike
 import pathlib
-from typing import Any, Callable, Protocol, runtime_checkable
+from typing import Any, Callable, Protocol, runtime_checkable, TypeAlias
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +18,7 @@ class Handler(Protocol):
     def write(self, path: str | PathLike, data: Any, *, overwrite_ok: bool) -> None: ...
 
 
-type HandlerFactory = Callable[[], Handler]
+HandlerFactory: TypeAlias = Callable[[], Handler]
 
 handler_registry: OrderedDict = OrderedDict({})
 
