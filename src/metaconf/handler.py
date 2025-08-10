@@ -21,6 +21,7 @@ class Handler(Protocol):
 
 
 HandlerFactory: TypeAlias = Callable[[], Handler]
+"""Type alias for a zero-argument callable that returns a Handler."""
 
 handler_registry: OrderedDict = OrderedDict({})
 

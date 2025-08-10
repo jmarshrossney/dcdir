@@ -41,9 +41,15 @@ markdown_extensions:
   - pymdownx.superfences
   - toc:
       permalink: "⚓"
+      toc_depth: 3
 
 plugins:
   - autorefs
+  - include_exclude_files:
+      exclude:
+        - examples/.ipynb_checkpoints
+        - examples/jules/.ipynb_checkpoints
+  - ipynb
   - markdown-exec
   - mkdocstrings:
       default_handler: python
@@ -52,19 +58,28 @@ plugins:
           options:
             docstring_style: google
             docstring_section_style: spacy
-            separate_signature: true #false
+            separate_signature: true
             show_signature: true
-            signature_crossrefs: true
+            signature_crossrefs: false # true
             show_signature_annotations: true
             show_if_no_docstring: false
             show_root_heading: true
             show_source: false
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
           paths: [src]
+  #- mkdocs-jupyter:
+    #    ignore_h1_titles: true
+    #  execute: false #true
+    #  allow_errors: false
   - search
 
 nav:
-  - Home: index.md
-  - Examples: examples.md
-  - API Reference: api.md
+  - index.md
+  - usage.md
+  - api.md
+  - Examples:
+    - JULES land surface model: examples/jules/notebook.ipynb
+    #- test (md): examples/jules/notebook.md
 
 
