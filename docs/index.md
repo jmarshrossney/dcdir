@@ -15,3 +15,21 @@ That is pretty much it! I intend to keep this package extremely minimal.
 In particular, it is not in the scope of `metaconf` to perform validation of the actual configuration (this functionality is well-served by other tools).
 
 
+
+## Installation
+
+=== "pip"
+
+    ```sh
+    pip install git+https://github.com/jmarshrossney/metaconf
+    ```
+
+=== "uv"
+
+    ```sh
+    uv add git+https://github.com/jmarshrossney/metaconf
+    ```
+
+Coming soon to PyPI!
+
+

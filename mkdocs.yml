@@ -37,6 +37,8 @@ markdown_extensions:
   - footnotes
   - pymdownx.details
   - pymdownx.caret  # Superscipt using ^x^
+  - pymdownx.tabbed:
+      alternate_style: true
   - pymdownx.tilde  # Subscript using ~x~
   - pymdownx.superfences
   - toc:
