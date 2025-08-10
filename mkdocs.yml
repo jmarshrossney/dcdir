@@ -56,14 +56,18 @@ plugins:
       handlers:
         python:
           options:
+            annotations_path: brief
             docstring_style: google
-            docstring_section_style: spacy
+            docstring_section_style: list
+            line_length: 88
             separate_signature: true
             show_signature: true
-            signature_crossrefs: false # true
+            signature_crossrefs: true
             show_signature_annotations: true
             show_if_no_docstring: false
+            show_root_full_path: true
             show_root_heading: true
+            show_root_members_full_path: false
             show_source: false
             show_symbol_type_heading: true
             show_symbol_type_toc: true

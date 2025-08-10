@@ -11,13 +11,23 @@ logger = logging.getLogger(__name__)
 
 @runtime_checkable
 class Handler(Protocol):
-    """A Protocol for all valid handlers."""
+    """A Protocol for all valid handlers.
+
+    As with any `Protocol`, it is not necessary to subclass `Handler`. However, any
+    valid handler must implement the `read` and `write` methods with signatures
+    matching the abstract methods given here.
+
+    """
 
     @abstractmethod
-    def read(self, path: str | PathLike) -> Any: ...
+    def read(self, path: str | PathLike) -> Any:
+        """Abstract method for reading data from a file or directory."""
+        ...
 
     @abstractmethod
-    def write(self, path: str | PathLike, data: Any, *, overwrite_ok: bool) -> None: ...
+    def write(self, path: str | PathLike, data: Any, *, overwrite_ok: bool) -> None:
+        """Abstract method for writing data to a file or directory."""
+        ...
 
 
 HandlerFactory: TypeAlias = Callable[[], Handler]
