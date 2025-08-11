@@ -24,6 +24,7 @@ docs = [
     "markdown-exec[ansi]>=1.11.0",
     "mkdocs>=1.6.1",
     "mkdocs-include-exclude-files>=0.1.0",
+    "mkdocs-include-markdown-plugin>=7.1.6",
     "mkdocs-ipynb>=0.1.1",
     "mkdocs-material>=9.6.16",
     "mkdocstrings[python]>=0.30.0",

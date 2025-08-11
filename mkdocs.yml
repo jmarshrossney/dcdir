@@ -51,6 +51,7 @@ plugins:
       exclude:
         - examples/.ipynb_checkpoints
         - examples/jules/.ipynb_checkpoints
+  - include-markdown
   - ipynb
   - markdown-exec
   - mkdocstrings:
@@ -82,9 +83,11 @@ plugins:
 
 nav:
   - index.md
-  - usage.md
+  - basic.md
+  - advanced.md
   - api.md
-  - Examples:
+  - examples:
+    - "101": examples/101/notebook.md
     - JULES land surface model: examples/jules/notebook.ipynb
     #- test (md): examples/jules/notebook.md
 
