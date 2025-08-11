@@ -1,21 +1,21 @@
 # Metaconf
 
 > [!IMPORTANT]
-> This package is only a few days old. It is sparsely tested and entirely undocumented. Use at your own risk!
+> This package is only a few days old. It is sparsely tested. Use at your own risk!
 
-This is a simple tool for the meta-configuration of collections of configuration files, using Python dataclasses.
 
-I wrote this because I sometimes work with quite old scientific models which tend to require various configuration files of different formats to be present in various places.
+`metaconf` is a simple tool for the meta-configuration of collections of configuration files, leaning heavily on Python [dataclasses](https://docs.python.org/3/library/dataclasses.html).
 
-I wanted to have a tool that could:
+I wrote this because I sometimes work with quite old scientific models requiring various configuration files and data inputs in various formats to be present in various locations. I was (and remain) concerned about how easy it can be to misconfigure certain models without realising, and how common workflows compromise reproducibility.
 
-1. Allow me to describe the structure of a directory representing a valid configuration, and validate real directories against this description.
+`metaconf` helps by
 
-2. Facilitate the generation of new configurations programmatically, in Python, as opposed to copying and editing files by hand or throwing together shell scripts.
+1. Allowing the user to describe the structure of a directory representing a valid configuration, and validate real directories against this description.
 
-That is pretty much it! I intend to keep this package extremely minimal.
+2. Facilitating the generation of new configurations and metadata programmatically, in Python, as opposed to copying and editing files by hand or writing shell scripts.
 
-In particular, it is not in the scope of `metaconf` to perform validation of the actual configuration (this functionality is well-served by other tools).
+3. Providing a consistent mechanism through which complex, distributed configurations in legacy formats can be validated using excellent tools such as [JSON Schema](https://json-schema.org/) and [Pydantic](https://docs.pydantic.dev/).
+
 
 ## Getting started
 
