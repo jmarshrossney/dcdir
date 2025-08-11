@@ -56,6 +56,8 @@ All of the examples (include 'Usage') are based on Jupyter notebooks. Instructio
 
 ## Philosophy
 
-I have no intention of developing `metaconf` into a more sophisticated tool than it already is. The aim is that is works seamlessly alongside other tools and packages for parsing and validation, without ever getting in the way or creating conflicts.
+`metaconf` contains ~700 lines of code (including docstrings) and has no dependencies beyond the Standard Library.
+
+This is by design. I have no intention of developing `metaconf` into a more sophisticated tool than it already is. The aim is that is works seamlessly alongside other tools and packages for parsing and validation, without ever getting in the way or creating conflicts.
 
 With that out of the way, please feel free to raise an [issue](https://github.com/jmarshrossney/metaconf/issues) or make a [pull request](https://github.com/jmarshrossney/metaconf/pulls) to suggest a change or feature.

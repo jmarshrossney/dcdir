@@ -16,21 +16,30 @@ I wrote this because I sometimes work with quite old scientific models requiring
 
 3. Providing a consistent mechanism through which complex, distributed configurations in legacy formats can be validated using excellent tools such as [JSON Schema](https://json-schema.org/) and [Pydantic](https://docs.pydantic.dev/).
 
+For user documentation and examples please visit [https://jmarshrossney.github.io/metaconf/](https://jmarshrossney.github.io/metaconf/).
+
 
 ## Getting started
 
-Install the project by running
+This project uses [`uv`](https://docs.astral.sh/uv/), although you are free to substitute this with other tools for working on Python projects.
+
+Install the project and development dependencies by running
 
 ```sh
 uv sync
 ```
 
-and then run the tests with
+You can now run the tests in the repository root with
 
 ```sh
 uv run pytest
 ```
 
+Before contributing, consider installing [`pre-commit`](https://pre-commit.com/) so that the pre-commit hooks run before each commit.
+
+```sh
+uv tool install pre-commit
+```
 
 ## Building the example notebooks
 
@@ -53,4 +62,7 @@ to build the documentation and display it in your browser.
 
 ## Contributing
 
-Contributions welcome.
+Contributions are welcome! Please open a Pull Request against the `develop` branch.
+
+However, please keep in mind that the overarching goal of this project is to be as simple as possible (while still being useful).
+
