@@ -21,47 +21,47 @@ register_handler("test_handler", HandlerTest)
 
 
 @pytest.fixture
-def path_config() -> pathlib.Path:
-    return pathlib.Path(__file__).parent / "_config.json"
+def path_spec() -> pathlib.Path:
+    return pathlib.Path(__file__).parent / "spec.json"
 
 
 @pytest.fixture
-def path_config_as_str(path_config) -> str:
-    return str(path_config)
+def path_spec_as_str(path_spec) -> str:
+    return str(path_spec)
 
 
 @pytest.fixture
-def str_config(path_config) -> str:
-    with path_config.open("r") as file:
-        config_str = file.read()
-    return config_str
+def str_spec(path_spec) -> str:
+    with path_spec.open("r") as file:
+        spec_str = file.read()
+    return spec_str
 
 
 @pytest.fixture
-def dict_config(path_config) -> dict:
-    with path_config.open("r") as file:
-        config_dict = json.load(file)
-    return config_dict
+def dict_spec(path_spec) -> dict:
+    with path_spec.open("r") as file:
+        spec_dict = json.load(file)
+    return spec_dict
 
 
-def test_dict_config(dict_config):
-    _ = make_metaconfig("TestConfig", dict_config)
+def test_dict_spec(dict_spec):
+    _ = make_metaconfig("TestConfig", dict_spec)
 
 
-def test_str_config(str_config):
-    _ = make_metaconfig("TestConfig", str_config)
+def test_str_spec(str_spec):
+    _ = make_metaconfig("TestConfig", str_spec)
 
 
-def test_path_config(path_config):
-    _ = make_metaconfig("TestConfig", path_config)
+def test_path_spec(path_spec):
+    _ = make_metaconfig("TestConfig", path_spec)
 
 
-def test_path_config_as_str(path_config_as_str):
-    _ = make_metaconfig("TestConfig", path_config_as_str)
+def test_path_spec_as_str(path_spec_as_str):
+    _ = make_metaconfig("TestConfig", path_spec_as_str)
 
 
-def test_instantiation(dict_config):
-    class_ = make_metaconfig("TestConfig", dict_config)
+def test_instantiation(dict_spec):
+    class_ = make_metaconfig("TestConfig", dict_spec)
     # Test bfile given as path
     _ = class_(
             afile={"path": "afile.txt", "handler": "test_handler"},

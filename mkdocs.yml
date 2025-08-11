@@ -75,20 +75,13 @@ plugins:
             show_symbol_type_heading: true
             show_symbol_type_toc: true
           paths: [src]
-  #- mkdocs-jupyter:
-    #    ignore_h1_titles: true
-    #  execute: false #true
-    #  allow_errors: false
   - search
 
 nav:
   - index.md
-  - basic.md
-  - advanced.md
+  - usage.ipynb #examples/101/notebook.ipynb
   - api.md
   - examples:
-    - "101": examples/101/notebook.md
     - JULES land surface model: examples/jules/notebook.ipynb
-    #- test (md): examples/jules/notebook.md
 
 

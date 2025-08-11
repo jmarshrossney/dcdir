@@ -152,9 +152,6 @@ class MetaConfig:
         Returns:
           tree_repr: A printable tree-like representation of the configuration.
 
-        Note:
-          This is inspired by [GNU `tree`](https://linux.die.net/man/1/tree) and
-          is an adaptation of [this stackoverflow answer](https://stackoverflow.com/questions/9727673/list-directory-tree-structure-in-python) by Aaron Hall.
         """
         return "\n".join(
             list(self._tree(prefix="", depth=1, max_depth=max_depth, details=details))
@@ -228,7 +225,7 @@ def _str_is_path(s: str) -> bool:
 
 
 def make_metaconfig(
-    cls_name: str, config: dict | str | PathLike, **kwargs
+    cls_name: str, spec: dict | str | PathLike, **kwargs
 ) -> type[MetaConfig]:
     """A function that generates subclasses of `MetaConfig`.
 
@@ -236,24 +233,22 @@ def make_metaconfig(
 
     Arguments:
       cls_name: A name for the class being created.
-      config: A configuration specifying the node (field) names, paths and handlers.
-        See [Usage][Usage] for details.
+      spec: A dict specifying the node (field) names, paths and handlers.
+        See ['Usage'][usage.html] for details.
       kwargs: Additional arguments to pass to `make_dataclass`.
 
     Returns:
       MetaConfigSubclass: The resulting subclass of `MetaConfig`.
     """
-    if isinstance(config, dict):
-        return _make_metaconfig(cls_name, config, **kwargs)
+    if isinstance(spec, dict):
+        return _make_metaconfig(cls_name, spec, **kwargs)
 
-    if isinstance(config, str) and _str_is_json(config):
-        return _make_metaconfig(cls_name, json.loads(config), **kwargs)
+    if isinstance(spec, str) and _str_is_json(spec):
+        return _make_metaconfig(cls_name, json.loads(spec), **kwargs)
 
-    if isinstance(config, PathLike) or (
-        isinstance(config, str) and _str_is_path(config)
-    ):
-        with open(config, "r") as file:
-            loaded_config = json.load(file)
-        return _make_metaconfig(cls_name, loaded_config, **kwargs)
+    if isinstance(spec, PathLike) or (isinstance(spec, str) and _str_is_path(spec)):
+        with open(spec, "r") as file:
+            loaded_spec = json.load(file)
+        return _make_metaconfig(cls_name, loaded_spec, **kwargs)
 
-    raise TypeError(f"Unsupported type: {type(config)}")
+    raise TypeError(f"Unsupported type: {type(spec)}")

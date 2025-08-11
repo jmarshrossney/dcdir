@@ -1,14 +1,16 @@
 # Home
 
-This is a simple tool for the meta-configuration of collections of configuration files, using Python [dataclasses](https://docs.python.org/3/library/dataclasses.html).
+`metaconf` is a simple tool for the meta-configuration of collections of configuration files, leaning heavily on Python [dataclasses](https://docs.python.org/3/library/dataclasses.html).
 
-I wrote this because I sometimes work with quite old scientific models which tend to require various configuration files of different formats to be present in various places.
+I wrote this because I sometimes work with quite old scientific models requiring various configuration files and data inputs in various formats to be present in various locations. I was (and remain) concerned about how easy it can be to misconfigure certain models without realising, and how common workflows compromise reproducibility.
 
-`metaconf` is a tool that
+`metaconf` helps by
 
-1. Allows the user to describe the structure of a directory representing a valid configuration, and validate real directories against this description.
+1. Allowing the user to describe the structure of a directory representing a valid configuration, and validate real directories against this description.
 
-2. Facilitate the generation of new configurations programmatically, in Python, as opposed to copying and editing files by hand or writing shell scripts.
+2. Facilitating the generation of new configurations and metadata programmatically, in Python, as opposed to copying and editing files by hand or writing shell scripts.
+
+3. Providing a consistent mechanism through which complex, distributed configurations in legacy formats can be validated using excellent tools such as [JSON Schema](https://json-schema.org/) and [Pydantic](https://docs.pydantic.dev/).
 
 
 ## Installation
@@ -31,8 +33,11 @@ I wrote this because I sometimes work with quite old scientific models which ten
 !!! Note
     Currently `metaconf` is not in PyPI and must be installed directly from Github.
 
+Currently Python versions equal to or above 3.11 are supported.
+It has no dependencies other than the Standard Library.
 
-## Usage
+
+## Overview of usage
 
 There are two essential steps for adapting `metaconf` to a specific use-case.
 
@@ -44,24 +49,13 @@ The custom `MetaConfig` subclass can then be used to
 1. **Read** a configuration from the filesystem into a Python `dict` ([`MetaConfig.read`][metaconf.config.MetaConfig.read]). 
 2. **Write** a configuration `dict` to the filesystem ([`MetaConfig.write`][metaconf.config.MetaConfig.write])
 
-These steps are most easily understood through examples. See 
+These steps are most easily understood through examples. To start with, take a look at the [Usage][] section. More realistic examples can be found in the right navigation bar.
+
+All of the examples (include 'Usage') are based on Jupyter notebooks. Instructions for building the notebooks locally can be found in the `README.md` file in the [GitHub repository](https://github.com/jmarshrossney/metaconf).
 
 
 ## Philosophy
 
-I created this because
+I have no intention of developing `metaconf` into a more sophisticated tool than it already is. The aim is that is works seamlessly alongside other tools and packages for parsing and validation, without ever getting in the way or creating conflicts.
 
-I wanted this tool to work alongside these other tools, without ever getting in the way or creating conflicts.
-
-
-`metaconf` does not
-
-- Come with any pre-built handlers or meta-configurations
-- Provide any 
-
-This is intentional.
-It has no dependencies other than the Standard Library.
-
-In particular, it is not in the scope of `metaconf` to perform validation of the actual configuration (this functionality is well-served by other tools).
-
-
+With that out of the way, please feel free to raise an [issue](https://github.com/jmarshrossney/metaconf/issues) or make a [pull request](https://github.com/jmarshrossney/metaconf/pulls) to suggest a change or feature.

@@ -133,7 +133,7 @@ _jules_namelists = [
 
 NamelistDirectoryHandler = metaconf.make_metaconfig(
     cls_name="NamelistDirectoryHandler",
-    config={
+    spec={
         name: {"path": f"{name}.nml", "handler": NamelistFileHandler}
         for name in _jules_namelists
     },
@@ -248,14 +248,13 @@ import xarray
 )
 class NetcdfFileHandler:
     def read(self, path: str | PathLike) -> xarray.Dataset:
-        logger.warning("Loading full dataset from {path}")
         dataset = xarray.load_dataset(path)
         return dataset
 
     def write(
         self, path: str | PathLike, data: xarray.Dataset, *, overwrite_ok: bool = False
     ) -> None:
-        if not overwrite_ok and pathlib.Path(path).is_file():
+        if not overwrite_ok and Path(path).is_file():
             raise FileExistsError(f"There is already a file at '{path}'")
         data.to_netcdf(path)
 
@@ -273,7 +272,7 @@ metaconf.register_handler("netcdf", NetcdfFileHandler, [".nc", ".cdf"])
 ```python
 InputFilesConfig = metaconf.make_metaconfig(
     cls_name="InputFilesConfig",
-    config={
+    spec={
         "initial_conditions": {
             "handler": AsciiFileHandler,
         },
@@ -289,7 +288,7 @@ InputFilesConfig = metaconf.make_metaconfig(
 ```python
 JulesConfigHandler = metaconf.make_metaconfig(
     cls_name="JulesConfigHandler",
-    config={
+    spec={
         "inputs": {},  # we will fix this upon instantiation
         "namelists": {"handler": NamelistDirectoryHandler},  # fully fixed
 
@@ -301,7 +300,9 @@ JulesConfigHandler = metaconf.make_metaconfig(
 ## Reading an existing configuration
 
 ```python
-! tree config/
+from metaconf.utils import tree
+    
+print(tree("./config"))
 ```
 
 ```python
@@ -310,7 +311,7 @@ handler = JulesConfigHandler(
     inputs={
         "path": "inputs",
         "handler": lambda: InputFilesConfig(
-            initial_conditions="initial_conditions_bb219.dat",
+            initial_conditions="initial_conditions.dat",
             tile_fractions="tile_fractions.dat",
             driving_data="Loobos_1997.dat",
         )
@@ -325,6 +326,36 @@ config = handler.read("./config")
 
 config.keys()
 ```
+
+## Reading with netcdf
+
+
+```python
+handler = JulesConfigHandler(
+    namelists="namelists",
+    inputs={
+        "path": "inputs",
+        "handler": lambda: InputFilesConfig(
+            initial_conditions="initial_conditions.dat",
+            tile_fractions="tile_fractions.dat",
+            driving_data="Loobos_1997.nc",
+        )
+    }
+)
+
+print(handler)
+```
+
+```python
+config = handler.read("./config")
+
+config.keys()
+```
+
+```python
+config["inputs"]["driving_data"]
+```
+
 
 ## Writing a new configuration
 
@@ -346,12 +377,6 @@ with tempfile.TemporaryDirectory() as temp_dir:
 
     handler.write(temp_dir, config)
 
-    ! tree {temp_dir}
-
-    ! grep "output_period" {Path(temp_dir) / "namelists" / "output.nml"}
-
+    print(tree(temp_dir))
 ```
 
-```python
-
-```

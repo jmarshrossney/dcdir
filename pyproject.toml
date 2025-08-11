@@ -35,6 +35,8 @@ examples = [
     "f90nml>=1.4.5",
     "numpy>=2.3.2",
     "xarray>=2025.7.1",
+    "pyyaml>=6.0.2",
+    "netcdf4>=1.7.2",
 ]
 
 [tool.uv]
