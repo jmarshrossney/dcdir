@@ -49,3 +49,8 @@ uv run mkdocs serve
 ```
 
 to build the documentation and display it in your browser.
+
+
+## Contributing
+
+Contributions welcome.
