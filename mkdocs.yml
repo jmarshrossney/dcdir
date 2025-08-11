@@ -64,6 +64,7 @@ plugins:
             annotations_path: brief
             docstring_style: google
             docstring_section_style: list
+            members_order: alphabetical
             line_length: 88
             separate_signature: true
             show_signature: true

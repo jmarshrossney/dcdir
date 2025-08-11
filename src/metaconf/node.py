@@ -2,6 +2,7 @@ import dataclasses
 from os import PathLike
 from pathlib import Path
 from typing import Callable
+import warnings
 
 from .handler import Handler, HandlerFactory, infer_handler_from_path, parse_handler
 
@@ -22,8 +23,13 @@ class Node:
         path = Path(self.path)
         # Do not allow absolute paths or paths include '..'
         if path.expanduser().is_absolute():
-            raise ValueError("`path` should be relative, not absolute")
-        if not path.resolve().is_relative_to(Path.cwd()):
+            # TODO: decide whether to support this or not.
+            # It seems unsafe unless explicitly handled.
+            warnings.warn(
+                "Absolute paths are not recommended and may not be supported in future (https://github.com/jmarshrossney/metaconf/issues/13). Did you mean to do this?"
+            )
+            # raise ValueError("`path` should be relative, not absolute")
+        elif not path.resolve().is_relative_to(Path.cwd()):
             raise ValueError("`path` should not include '..'")
 
         # Parsing + validation of handler
