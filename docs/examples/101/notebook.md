@@ -304,15 +304,185 @@ json_handler.read("./basic_json")
 
 ### Handling missing files
 
-To do.
+Up to this point, attempting to call `read` on a missing file or directory will result in an error being thrown. 
 
-### Absolute paths
+In some situations we might want to handle missing data differently. Sometimes certain files are optional, and one is simply happy to skip over them if they do not exist.
 
-To do.
+Another use-case would be reading from a 'template' configuration that is incomplete, requiring additional data which we will merge into the Python `dict` before writing the complete configuration to a new location.
 
-### Validation strategies
+```python
+from metaconf.filter import filter_missing
 
-To do.
+@filter_missing(warn=True)
+class DummyHandler:
+    def read(self, path: str | PathLike) -> None:
+        print("`read` has been called.")
+
+    def write(self, path: str | PathLike, data: None, *, overwrite_existing: bool = False) -> None:
+        print("`write` has been called.")
+```
+
+```python
+ConfigHandler = make_metaconfig(
+    cls_name="ConfigHandler",
+    spec={
+        "config": {"path": "config.yml", "handler": YamlFileHandler},
+        "data": {"path": "data.csv", "handler": CsvFileHandler},
+        "optional": {"path": "optional.file", "handler": DummyHandler},
+    },
+)
+```
+
+Let's try to read the usual configuration
+
+```python
+handler = ConfigHandler()
+
+config = handler.read("./basic")
+```
+
+We see that `DummyHandler.read` was never called, and instead we are shown a warning that `read('optional.file')` was filtered out by a test (which we are shown the code for). Note that this warning can be disabled by setting `warn=False` (the default) in `filter_missing`. 
+
+The configuration `dict` contains an entry corresponding to the `optional` node, but it has a special _sentinal_ value, [metaconf.filter.MISSING][].
+
+```python
+config
+```
+
+Now let's see what happens when we try to write the incomplete configuration.
+
+```python
+with tempfile.TemporaryDirectory() as temp_dir:
+    handler.write(temp_dir, config)
+
+    print(tree(temp_dir))
+```
+
+Once again we are shown a warning, which explains both what was filtered out and why, and `DummyHandler.write` was never called.
+
+
+### Filtering
+
+The `filter_missing` decorator is a special case of a more general [`filter`][metaconf.filter.filter] class decorator, which allows the user to specify tests which trigger the 'missingness' behaviour if they fail.
+
+We will now briefly run through some illustrative examples where filtering comes in useful.
+
+#### Skipping large files
+
+As an example, we will consider a situation where one of the files in a configuration is very large, and we want to avoid loading it into memory.
+
+This is easy to achieve by combining the already-familiar `filter_missing` with a custom filter applied to the `read` method, using [`filter_read`][metaconf.filter.filter_read]. 
+
+We will demonstrate this by creating a subclass of `CsvFileHandler` from earlier.
+
+```python
+from metaconf.filter import filter_read
+
+@filter_missing()
+class PotentiallyLargeFileHandler(CsvFileHandler):
+
+    @filter_read(test=lambda path: str(path) not in ["big.csv", "huge.csv"], label="skip large files")
+    def read(self, path: str | PathLike) -> None:
+        return super().read(path)
+
+    def write(self, path: str | PathLike, data: None, *, overwrite_existing: bool = False) -> None:
+        return super().write(path, data, overwrite_existing=overwrite_existing)
+```
+
+It should not be difficult to see why this works, but the following demonstrates it explicitly.
+
+```python
+ConfigHandler = make_metaconfig(
+    cls_name="ConfigHandler",
+    spec={
+        "a": {"handler": PotentiallyLargeFileHandler},
+        "b": {"handler": PotentiallyLargeFileHandler},
+        "c": {"handler": PotentiallyLargeFileHandler},
+    },
+)
+
+print(tree("./sizes"))
+
+handler = ConfigHandler(
+    a="small.csv",
+    b="big.csv",
+    c="huge.csv",
+)
+
+config = handler.read("./sizes")
+
+config
+```
+
+
+#### Skipping absolute paths
+
+```python
+from metaconf.filter import filter
+
+@filter(
+    read=lambda path: not path.is_absolute(),
+    write=lambda path, data, **_: not path.is_absolute()
+)
+class SaferCsvFileHandler(CsvFileHandler):
+    pass
+
+ConfigHandler = make_metaconfig(
+    cls_name="ConfigHandler",
+    spec={
+        "config": {"path": "config.yml", "handler": YamlFileHandler},
+        "data": {"path": "data.csv", "handler": SaferCsvFileHandler},
+        "big_data": {"path": "/path/to/shared/data.csv", "handler": SaferCsvFileHandler},
+    }
+)
+
+handler = ConfigHandler()
+print(handler)
+```
+
+```python
+config = handler.read("./basic/")
+
+config
+```
+
+```python
+with tempfile.TemporaryDirectory() as temp_dir:
+    handler.write(temp_dir, config)
+
+    print(tree(temp_dir))
+```
+
+
+#### Generating metadata
+
+In this example, we will read an incomplete configuration from `./basic`, and only upon `write` will we inject metadata into the configuration.
+
+```python
+from metaconf.filter import filter_missing
+
+ConfigHandler = make_metaconfig(
+    cls_name="ConfigHandler",
+    spec={
+        "config": {"path": "config.yml", "handler": YamlFileHandler},
+        "data": {"path": "data.csv", "handler": CsvFileHandler},
+        "metadata": {"path": "metadata.csv", "handler": filter_missing()(CsvFileHandler)},
+    },
+)
+
+handler = ConfigHandler()
+
+config = handler.read("./basic")
+
+print(config["metadata"])
+```
+
+*Not yet finished.*
+
+
+### Strategies for validation
+
+*To do.*
 
 
 <!-- end advanced -->
