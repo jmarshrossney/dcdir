@@ -5,7 +5,7 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build-notebooks:
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -23,38 +23,26 @@ jobs:
     - name: Build notebooks
       run: uv run --group examples jupytext --set-formats ipynb,md --execute docs/examples/*/*.md
 
-  # This is based on https://squidfunk.github.io/mkdocs-material/publishing-your-site/#with-github-actions
-  deploy-docs:
+    - name: Build docs
+      run: uv run mkdocs build
+
+    - name: Upload static files
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: site/
+
+  deploy:
     runs-on: ubuntu-latest
-    needs: build-notebooks
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-    - uses: actions/checkout@v4
-
-    - name: Configure Git Credentials
-      run: |
-        git config user.name github-actions[bot]
-        git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-
-    - run: echo "cache_id=$(date --utc '+%V')" >> $GITHUB_ENV 
-
-    - uses: actions/cache@v4
-      with:
-        key: mkdocs-material-${{ env.cache_id }}
-        path: ~/.cache 
-        restore-keys: |
-          mkdocs-material-
-
-    - name: Install uv
-      uses: astral-sh/setup-uv@v6
-
-    - name: Set up Python
-      run: uv python install
-
-    - name: Install the project
-      run: uv sync --locked --dev
-
-    - name: Deploy the documentation
-      run: uv run mkdocs gh-deploy --force
+    - name: Deploy to GitHub Pages
+      uses: actions/deploy-pages@v4
 
 
