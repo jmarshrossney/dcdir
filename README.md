@@ -17,6 +17,20 @@ That is pretty much it! I intend to keep this package extremely minimal.
 
 In particular, it is not in the scope of `metaconf` to perform validation of the actual configuration (this functionality is well-served by other tools).
 
+## Getting started
+
+Install the project by running
+
+```sh
+uv sync
+```
+
+and then run the tests with
+
+```sh
+uv run pytest
+```
+
 
 ## Building the example notebooks
 
