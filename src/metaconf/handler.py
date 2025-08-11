@@ -11,14 +11,27 @@ logger = logging.getLogger(__name__)
 
 @runtime_checkable
 class Handler(Protocol):
-    @abstractmethod
-    def read(self, path: str | PathLike) -> Any: ...
+    """A Protocol for all valid handlers.
+
+    As with any `Protocol`, it is not necessary to subclass `Handler`. However, any
+    valid handler must implement the `read` and `write` methods with signatures
+    matching the abstract methods given here.
+
+    """
 
     @abstractmethod
-    def write(self, path: str | PathLike, data: Any, *, overwrite_ok: bool) -> None: ...
+    def read(self, path: str | PathLike) -> Any:
+        """Abstract method for reading data from a file or directory."""
+        ...
+
+    @abstractmethod
+    def write(self, path: str | PathLike, data: Any, *, overwrite_ok: bool) -> None:
+        """Abstract method for writing data to a file or directory."""
+        ...
 
 
 HandlerFactory: TypeAlias = Callable[[], Handler]
+"""Type alias for a zero-argument callable that returns a Handler."""
 
 handler_registry: OrderedDict = OrderedDict({})
 
@@ -26,6 +39,7 @@ handler_registry: OrderedDict = OrderedDict({})
 def register_handler(
     name: str, handler: HandlerFactory, extensions: list[str] = []
 ) -> None:
+    """Add a handler factory to the registry."""
     if name in handler_registry:
         logger.warning(
             f"'{name}' already exists in handler registry, and will be overwritten!"
@@ -44,6 +58,7 @@ def register_handler(
 
 
 def parse_handler(input: str | HandlerFactory) -> HandlerFactory:
+    """Returns a `HandlerFactory given any valid input."""
     if input in handler_registry:
         handler = handler_registry[input]["handler"]
     elif isinstance(input, str):
@@ -59,6 +74,7 @@ def parse_handler(input: str | HandlerFactory) -> HandlerFactory:
 
 
 def infer_handler_from_path(path: str | PathLike) -> HandlerFactory:
+    """Infers the desired HandlerFactory based on the file extension."""
     extension = pathlib.Path(path).suffix
     compatible_handlers = {
         key: val["handler"]
@@ -73,4 +89,4 @@ def infer_handler_from_path(path: str | PathLike) -> HandlerFactory:
         logger.warning(
             f"Multiple compatible handlers found for extension '{extension}'."
         )
-    return list(compatible_handlers.values())[0]
+    return list(compatible_handlers.values())[-1]

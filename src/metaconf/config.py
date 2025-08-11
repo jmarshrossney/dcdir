@@ -13,7 +13,12 @@ logger = logging.getLogger(__name__)
 
 @dataclasses.dataclass
 class MetaConfig:
-    """A base dataclass representing a collection of configuration files."""
+    """A base dataclass representing a collection of configuration files.
+
+    This either be subclassed explicitly, i.e. via `class MyConfig(MetaConfig): ...`,
+    or through the [`make_metaconfig`][metaconf.config.make_metaconfig] function.
+    All fields are expected to be instances of [`Node`][metaconf.node.Node].
+    """
 
     def __post_init__(self) -> None:
         for field in dataclasses.fields(self):
@@ -30,6 +35,15 @@ class MetaConfig:
         return type(self)(**dataclasses.asdict(self))
 
     def read(self, path: str | PathLike) -> dict[str, Any]:
+        """Read a configuration from a given path and return its contents as a dict.
+
+        Arguments:
+          path: A path to a directory containing the configuration files.
+
+        Returns:
+          config: The read configuration as a Python `dict`. The keys of the
+            dictionary will be the field names of the `MetaConfig` subclass.
+        """
         data = {}
 
         with switch_dir(path):
@@ -44,6 +58,18 @@ class MetaConfig:
     def write(
         self, path: str | PathLike, data: dict[str, Any], *, overwrite_ok: bool = False
     ) -> None:
+        """Write a configuration to a given path.
+
+        Arguments:
+          path: A path to a directory where the configuration will be written.
+            The directory need not yet exist.
+          data: A `dict` whose keys match the field names for this `MetaConfig`,
+            and whose values contain the data to be written.
+          overwrite_ok: A flag indicating whether overwriting existing files is
+            acceptable. Nothing is done with this argument other than to pass it
+            to the [`write`][metaconf.handler.Handler.write] method for all of the
+            handlers.
+        """
         path = Path(path)
 
         if not path.is_dir():
@@ -58,6 +84,17 @@ class MetaConfig:
                 handler.write(config.path, data[field.name], overwrite_ok=overwrite_ok)
 
     def nodes(self, recurse: bool = False) -> Iterator[Node]:
+        """An iterator over all nodes (fields) in the configuration.
+
+        Arguments:
+          recurse: In cases where one or more of the nodes of the `MetaConfig`
+            is a directory whose `Handler` is itself instance of `MetaConfig`,
+            passing `recurse=True` will also yield the nodes from these children.
+
+        Yields:
+          nodes: Instances of [`Node`][metaconf.node.Node] corresponding to the
+            files and directories in the configuration.
+        """
         for field in dataclasses.fields(self):
             node = getattr(self, field.name)
 
@@ -105,6 +142,17 @@ class MetaConfig:
                 )
 
     def tree(self, max_depth: int | None = None, details: bool = True) -> str:
+        """Returns a tree-like representation of the configuration.
+
+        Arguments:
+          max_depth: Optionally truncate the tree at a certain depth.
+          details: If set to `False`, details about the path and handler are
+            suppressed.
+
+        Returns:
+          tree_repr: A printable tree-like representation of the configuration.
+
+        """
         return "\n".join(
             list(self._tree(prefix="", depth=1, max_depth=max_depth, details=details))
         )
@@ -177,19 +225,31 @@ def _str_is_path(s: str) -> bool:
 
 
 def make_metaconfig(
-    cls_name: str, config: dict | str | PathLike, **kwargs
+    cls_name: str, spec: dict | str | PathLike, **kwargs: Any
 ) -> type[MetaConfig]:
-    if isinstance(config, dict):
-        return _make_metaconfig(cls_name, config, **kwargs)
+    """A function that generates subclasses of `MetaConfig`.
 
-    if isinstance(config, str) and _str_is_json(config):
-        return _make_metaconfig(cls_name, json.loads(config), **kwargs)
+    This is a wrapper around [`dataclasses.make_dataclass`](https://docs.python.org/3/library/dataclasses.html#dataclasses.make_dataclass) that sets the base class
+    to [metaconf.config.MetaConfig][] and constructs fields using the provided
+    `spec`.
 
-    if isinstance(config, PathLike) or (
-        isinstance(config, str) and _str_is_path(config)
-    ):
-        with open(config, "r") as file:
-            loaded_config = json.load(file)
-        return _make_metaconfig(cls_name, loaded_config, **kwargs)
+    Arguments:
+      cls_name: A name for the class being created.
+      spec: A dict specifying the node (field) names, paths and handlers.
+      kwargs: Additional arguments to pass to `make_dataclass`.
 
-    raise TypeError(f"Unsupported type: {type(config)}")
+    Returns:
+      MetaConfigSubclass: The resulting subclass of `MetaConfig`.
+    """
+    if isinstance(spec, dict):
+        return _make_metaconfig(cls_name, spec, **kwargs)
+
+    if isinstance(spec, str) and _str_is_json(spec):
+        return _make_metaconfig(cls_name, json.loads(spec), **kwargs)
+
+    if isinstance(spec, PathLike) or (isinstance(spec, str) and _str_is_path(spec)):
+        with open(spec, "r") as file:
+            loaded_spec = json.load(file)
+        return _make_metaconfig(cls_name, loaded_spec, **kwargs)
+
+    raise TypeError(f"Unsupported type: {type(spec)}")

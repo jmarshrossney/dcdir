@@ -8,8 +8,13 @@ from .handler import Handler, HandlerFactory, infer_handler_from_path, parse_han
 
 @dataclasses.dataclass
 class Node:
+    """A dataclass representing a file or directory."""
+
     path: Path
+    """A path corresponding to a file or directory."""
     handler: HandlerFactory
+    """A [`HandlerFactory`][metaconf.handler.HandlerFactory] that produces valid
+       handlers with `read` and `write` methods for the file or directory."""
 
     def __post_init__(self) -> None:
         # Parsing + validation of path
@@ -36,12 +41,15 @@ class Node:
 
 
 def dict_to_node(path_and_handler: dict) -> Node:
+    """Converts a valid dict to a [`Node`][metaconf.node.Node]."""
     return Node(**path_and_handler)
 
 
 def path_to_node(
     handler: HandlerFactory | None = None,
 ) -> Callable[str | PathLike, Node]:
+    """Returns a transform that attempts to construct a Node from a path only."""
+
     def transform(path: str | PathLike | dict[str, str | PathLike]) -> Node:
         # Might pass argument as single-element dict {"path": path}
         if isinstance(path, dict):
@@ -53,6 +61,7 @@ def path_to_node(
 
 
 def to_node(input: Node | dict | str | PathLike) -> Node:
+    """A catch-all transform that produces a Node."""
     if isinstance(input, Node):
         return input
     if isinstance(input, dict) and "handler" in input:

@@ -1,0 +1,14 @@
+{
+	"id": "Basic config JSON",
+	"params": {
+		"a": 1.0,
+		"b": 2.0,
+		"c": 3.0
+	},
+	"init_state": [
+		0.0,
+		0.0,
+		0.0
+	],
+	"switch": true
+}

@@ -18,3 +18,22 @@ That is pretty much it! I intend to keep this package extremely minimal.
 In particular, it is not in the scope of `metaconf` to perform validation of the actual configuration (this functionality is well-served by other tools).
 
 **More documentation to come.**
+
+
+## Building the example notebooks
+
+The following command will convert all markdown `.md` notebooks to Jupyter `.ipynb` notebooks, and execute them.
+
+```sh
+uv run --group examples jupytext --set-formats ipynb,md --execute docs/examples/*/*.md
+```
+
+## Building the documentation
+
+After building the notebooks, simply run
+
+```sh
+uv run mkdocs serve
+```
+
+to build the documentation and display it in your browser.

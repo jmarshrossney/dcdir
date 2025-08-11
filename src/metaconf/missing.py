@@ -21,6 +21,12 @@ def handle_missing(
         lambda path, data, **_: data is not MISSING
     ),
 ):
+    """A decorator for Handler classes.
+
+    Arguments:
+      test_on_read: A
+    """
+
     def decorator(cls: Handler):
         original_read = cls.read
         original_write = cls.write

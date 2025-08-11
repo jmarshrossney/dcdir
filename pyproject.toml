@@ -20,6 +20,27 @@ dev = [
     "pytest>=8.4.1",
     "ruff>=0.12.3",
 ]
+docs = [
+    "markdown-exec[ansi]>=1.11.0",
+    "mkdocs>=1.6.1",
+    "mkdocs-include-exclude-files>=0.1.0",
+    "mkdocs-include-markdown-plugin>=7.1.6",
+    "mkdocs-ipynb>=0.1.1",
+    "mkdocs-material>=9.6.16",
+    "mkdocstrings[python]>=0.30.0",
+]
+examples = [
+    "jupyter>=1.1.1",
+    "jupytext>=1.17.2",
+    "f90nml>=1.4.5",
+    "numpy>=2.3.2",
+    "xarray>=2025.7.1",
+    "pyyaml>=6.0.2",
+    "netcdf4>=1.7.2",
+]
+
+[tool.uv]
+default-groups = ["dev", "docs"]
 
 [tool.ruff]
 exclude = [
@@ -29,3 +50,6 @@ exclude = [
 line-length = 88
 indent-width = 4
 target-version = "py313"
+
+[tool.jupytext]
+formats = "ipynb,md"
