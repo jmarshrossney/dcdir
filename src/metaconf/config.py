@@ -225,16 +225,17 @@ def _str_is_path(s: str) -> bool:
 
 
 def make_metaconfig(
-    cls_name: str, spec: dict | str | PathLike, **kwargs
+    cls_name: str, spec: dict | str | PathLike, **kwargs: Any
 ) -> type[MetaConfig]:
     """A function that generates subclasses of `MetaConfig`.
 
-    This is a wrapper around [`dataclasses.make_dataclass`](https://docs.python.org/3/library/dataclasses.html#dataclasses.make_dataclass).
+    This is a wrapper around [`dataclasses.make_dataclass`](https://docs.python.org/3/library/dataclasses.html#dataclasses.make_dataclass) that sets the base class
+    to [metaconf.config.MetaConfig][] and constructs fields using the provided
+    `spec`.
 
     Arguments:
       cls_name: A name for the class being created.
       spec: A dict specifying the node (field) names, paths and handlers.
-        See ['Usage'][usage.html] for details.
       kwargs: Additional arguments to pass to `make_dataclass`.
 
     Returns:

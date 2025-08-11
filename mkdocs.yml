@@ -8,7 +8,7 @@ repo_name: jmarshrossney/metaconf
 # NOTE: we can switch this to `true` when we publish the docs, since it
 # leads to nicer urls, but `false` means we can browse the docs locally
 # by simply opening `index.html`, without `mkdocs serve`.
-use_directory_urls: false
+use_directory_urls: true
 
 theme:
   name: material
@@ -49,8 +49,10 @@ plugins:
   - autorefs
   - include_exclude_files:
       exclude:
-        - examples/.ipynb_checkpoints
+        - examples/101/.ipynb_checkpoints
+        - examples/101/notebook.md
         - examples/jules/.ipynb_checkpoints
+        - examples/jules/notebook.md
   - include-markdown
   - ipynb
   - markdown-exec
@@ -79,7 +81,7 @@ plugins:
 
 nav:
   - index.md
-  - usage.ipynb #examples/101/notebook.ipynb
+  - examples/101/notebook.ipynb
   - api.md
   - examples:
     - JULES land surface model: examples/jules/notebook.ipynb

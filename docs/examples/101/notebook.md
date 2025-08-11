@@ -32,11 +32,6 @@ from metaconf.utils import tree
 print(tree("./basic"))
 ```
 
-!!! info
-    [metaconf.utils.tree][] mirrors the behaviour of GNU `tree`.
-
-
-
 ### Defining handlers
 
 We first need to define two handlers that implement `read` and `write` for the two files that make up a configuration.

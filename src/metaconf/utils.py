@@ -50,6 +50,10 @@ def tree(path: str | os.PathLike) -> str:
     """
     Construct a tree-like representation of a directory.
 
+    This is primarily for sanity-checking by comparing the output of
+    [`MetaConfig.tree`][metaconf.config.MetaConfig.tree] with an actual
+    directory.
+
     Note:
       This is inspired by [GNU `tree`](https://linux.die.net/man/1/tree) and
       is an adaptation of [this stackoverflow answer](https://stackoverflow.com/questions/9727673/list-directory-tree-structure-in-python) by Aaron Hall.

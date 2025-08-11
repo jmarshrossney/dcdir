@@ -49,7 +49,7 @@ The custom `MetaConfig` subclass can then be used to
 1. **Read** a configuration from the filesystem into a Python `dict` ([`MetaConfig.read`][metaconf.config.MetaConfig.read]). 
 2. **Write** a configuration `dict` to the filesystem ([`MetaConfig.write`][metaconf.config.MetaConfig.write])
 
-These steps are most easily understood through examples. To start with, take a look at the [Usage][] section. More realistic examples can be found in the right navigation bar.
+These steps are most easily understood through examples. To start with, take a look at the [Usage](examples/101/notebook.ipynb) section. More realistic examples can be found in the right navigation bar.
 
 All of the examples (include 'Usage') are based on Jupyter notebooks. Instructions for building the notebooks locally can be found in the `README.md` file in the [GitHub repository](https://github.com/jmarshrossney/metaconf).
 
