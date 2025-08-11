@@ -3,7 +3,7 @@ from collections import OrderedDict
 import importlib
 import logging
 from os import PathLike
-import pathlib
+from pathlib import Path
 from typing import Any, Callable, Protocol, runtime_checkable, TypeAlias
 
 logger = logging.getLogger(__name__)
@@ -29,6 +29,12 @@ class Handler(Protocol):
         """Abstract method for writing data to a file or directory."""
         ...
 
+
+ReadMethod: TypeAlias = Callable[[Handler, Path], Any]
+"""Type alias for the `read` method of a handler."""
+
+WriteMethod: TypeAlias = Callable[[Handler, Path, Any, bool], None]
+"""Type alias for the `write` method of a handler."""
 
 HandlerFactory: TypeAlias = Callable[[], Handler]
 """Type alias for a zero-argument callable that returns a Handler."""
@@ -75,7 +81,7 @@ def parse_handler(input: str | HandlerFactory) -> HandlerFactory:
 
 def infer_handler_from_path(path: str | PathLike) -> HandlerFactory:
     """Infers the desired HandlerFactory based on the file extension."""
-    extension = pathlib.Path(path).suffix
+    extension = Path(path).suffix
     compatible_handlers = {
         key: val["handler"]
         for key, val in handler_registry.items()
