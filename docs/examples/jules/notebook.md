@@ -174,12 +174,10 @@ We can use `numpy` to read and write floating point ascii data.
 from typing import TypedDict
 import numpy
 
-@metaconf.handle_missing(
-    test_on_read=lambda path: path.exists(),
-    test_on_write=lambda path, data, **_: not (
-        data is metaconf.MISSING or path.is_absolute()
-    ),
+@metaconf.filter(
+    write=lambda path, data, **_: not path.is_absolute()
 )
+@metaconf.filter_missing()
 class AsciiFileHandler:
     class AsciiData(TypedDict):
         values: numpy.ndarray
@@ -240,12 +238,11 @@ We will use `xarray` to read and write input data in the `netCDF` format.
 ```python
 import xarray
 
-@metaconf.handle_missing(
-    test_on_read=lambda path: path.exists() and not path.is_absolute(),
-    test_on_write=lambda path, data, **_: not (
-        data is metaconf.MISSING or path.is_absolute()
-    ),
+@metaconf.filter(
+    read=lambda path: not path.is_absolute(),
+    write=lambda path, data, **_: not path.is_absolute()
 )
+@metaconf.filter_missing()
 class NetcdfFileHandler:
     def read(self, path: str | PathLike) -> xarray.Dataset:
         dataset = xarray.load_dataset(path)
@@ -257,8 +254,6 @@ class NetcdfFileHandler:
         if not overwrite_ok and Path(path).is_file():
             raise FileExistsError(f"There is already a file at '{path}'")
         data.to_netcdf(path)
-
-
 ```
 
 ## Putting it together

@@ -109,8 +109,8 @@ def filter_write(
 
 
 def filter(
-    read: Callable[[Path], bool],
-    write: Callable[[Path, Any, ...], bool],
+    read: Callable[[Path], bool] | None = None,
+    write: Callable[[Path, Any, ...], bool] | None = None,
     label: str | None = None,
     warn: bool = False,
 ) -> Callable[type[Handler], type[Handler]]:
@@ -131,12 +131,18 @@ def filter(
       - [`filter_missing`][metaconf.filter.filter_missing]
     """
 
+    assert read or write, "Must provide at least one of (`read`, `write`)."
+
     def decorator(cls: Handler):
         original_read = cls.read
         original_write = cls.write
 
-        wrapped_read = filter_read(test=read, label=label, warn=warn)(original_read)
-        wrapped_write = filter_write(test=write, label=label, warn=warn)(original_write)
+        wrapped_read = filter_read(
+            test=read or (lambda *_: True), label=label, warn=warn
+        )(original_read)
+        wrapped_write = filter_write(
+            test=write or (lambda *_, **__: True), label=label, warn=warn
+        )(original_write)
 
         cls.read = wrapped_read
         cls.write = wrapped_write
@@ -165,49 +171,3 @@ def filter_missing(warn: bool = False) -> Callable[type[Handler], type[Handler]]
         write=lambda path, data, **_: data is not MISSING,
         warn=warn,
     )
-
-
-def handle_missing(
-    test_on_read: Callable[[Path], bool] = lambda path: Path(path).exists(),
-    test_on_write: Callable[[Path, Any, ...], bool] = (
-        lambda path, data, **_: data is not MISSING
-    ),
-):
-    """A decorator for Handler classes.
-
-    Arguments:
-      test_on_read: A
-    """
-
-    def decorator(cls: Handler):
-        original_read = cls.read
-        original_write = cls.write
-
-        @functools.wraps(original_read)
-        def wrapped_read(self, path: str | PathLike) -> Any:
-            if not test_on_read(Path(path)):
-                warnings.warn(
-                    f'read("{path}") failed missingness test; returning `MISSING`.',
-                    MissingWarning,
-                )
-                return MISSING
-
-            return original_read(self, path)
-
-        @functools.wraps(original_write)
-        def wrapped_write(self, path: str | PathLike, data: Any, **kwargs) -> None:
-            if not test_on_write(Path(path), data, **kwargs):
-                warnings.warn(
-                    f'write("{path}") failed missingness test; Skipping...',
-                    MissingWarning,
-                )
-                return
-
-            return original_write(self, path, data, **kwargs)
-
-        cls.read = wrapped_read
-        cls.write = wrapped_write
-
-        return cls
-
-    return decorator
