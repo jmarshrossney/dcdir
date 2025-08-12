@@ -1,7 +1,9 @@
+import json
 import logging
 import os
 import pathlib
 from typing import Iterator
+import types
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +50,7 @@ def _tree(path: pathlib.Path, prefix: str) -> Iterator[str]:
 
 def tree(path: str | os.PathLike) -> str:
     """
-    Construct a tree-like representation of a directory.
+    Constructs a tree-like representation of a directory.
 
     This is primarily for sanity-checking by comparing the output of
     [`MetaConfig.tree`][metaconf.config.MetaConfig.tree] with an actual
@@ -59,3 +61,21 @@ def tree(path: str | os.PathLike) -> str:
       is an adaptation of [this stackoverflow answer](https://stackoverflow.com/questions/9727673/list-directory-tree-structure-in-python) by Aaron Hall.
     """
     return path + "\n" + "\n".join(list(_tree(pathlib.Path(path), prefix="")))
+
+
+def dict_to_namespace(dict_: dict) -> types.SimpleNamespace:
+    """Converts a `dict` into a `SimpleNamespace` supporting 'dot' access."""
+    return json.loads(
+        json.dumps(dict_), object_hook=lambda item: types.SimpleNamespace(**item)
+    )
+
+
+def namespace_to_dict(namespace: types.SimpleNamespace) -> dict:
+    """Converts a `SimpleNamespace` back to a `dict`."""
+    result = {}
+    for key, val in vars(namespace).items():
+        if isinstance(val, types.SimpleNamespace):
+            result[key] = namespace_to_dict(val)
+        else:
+            result[key] = val
+    return result
